@@ -4,7 +4,7 @@
 
 ## ✨ ฟีเจอร์
 
-- **หน้าจอ Login** ด้วย BMS Session ID — เก็บใน Local Storage 7 วัน
+- **หน้าจอ Login** ด้วย BMS Session ID — ตรวจสอบกับ HOSxP API ทุกครั้งที่เปิดหน้า (ไม่ cache)
 - **Stats Cards**: จำนวนครั้งฟอก, จำนวนผู้ป่วย, ค่า UF เฉลี่ย, ค่าฟอกรวม
 - **ตัวกรอง**:
   - ช่วงวันที่ฟอก (พร้อม preset: วันนี้ / 7 วัน / 30 วัน / เดือนนี้ / เดือนที่แล้ว / ปีนี้)
@@ -37,13 +37,14 @@ npx serve .
 
 แล้วเปิด http://localhost:8080/
 
-### วิธีที่ 3: Auto-login ผ่าน URL
+### วิธีที่ 3: ส่ง Session ID ผ่าน URL (one-shot)
 
 ```
 http://localhost:8080/?bms-session-id=YOUR_SESSION_ID
 ```
 
-ระบบจะตรวจ session, save ลง Local Storage, แล้วลบ parameter ออกจาก URL
+ระบบจะตรวจ session กับ API แล้วลบ parameter ออกจาก URL  
+**ไม่บันทึก** ลง LocalStorage หรือ Cookie — ถ้า refresh หน้าจะกลับไปหน้า login อีกครั้ง
 
 ## 🔑 การหา BMS Session ID
 
@@ -51,7 +52,8 @@ http://localhost:8080/?bms-session-id=YOUR_SESSION_ID
 2. ดู URL: `?bms-session-id=...`
 3. หรือเปิด DevTools → Application → Cookies → `bms-session-id`
 
-Session มีอายุประมาณ 10 ชั่วโมง — หากหมดอายุ ระบบจะให้ login ใหม่
+Session ของ HOSxP มีอายุประมาณ 10 ชั่วโมง  
+แต่ระบบนี้บังคับ verify กับ API **ทุกครั้งที่เปิดหน้า** เพื่อความปลอดภัย — ไม่ใช้ session ที่ cache ไว้
 
 ## 🏗️ สถาปัตยกรรม
 
