@@ -523,10 +523,15 @@ async function fetchData() {
   $('statusDot').classList.remove('off');
 
   const sql = buildSQL(dateFrom, dateTo);
-  const url = `${session.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${APP_NAME}`;
+  // Use POST + JSON body — full SQL exceeds nginx URL length limit (~8 KB) and yields 414
   try {
-    const res = await fetch(url, {
-      headers: { 'Authorization': 'Bearer ' + session.apiAuthKey, 'Content-Type': 'application/json' }
+    const res = await fetch(`${session.apiUrl}/api/sql`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + session.apiAuthKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sql, app: APP_NAME })
     });
     if (res.status === 401) throw new Error('Auth Key หมดอายุ กรุณา login ใหม่');
     if (!res.ok) throw new Error('HTTP ' + res.status);
