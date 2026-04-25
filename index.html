@@ -331,13 +331,23 @@ function clearAnyCachedSession() {
 
 async function verifySession(sessionId) {
   const url = `${SESSION_VERIFY_URL}?Action=GET&code=${encodeURIComponent(sessionId)}`;
-  const res = await fetch(url, { headers: {'Content-Type':'application/json','Accept':'application/json'} });
+  console.log('[verifySession] →', url);
+  let res;
+  try {
+    res = await fetch(url, { headers: {'Accept':'application/json'} });
+  } catch (e) {
+    console.error('[verifySession] network error', e);
+    throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (network/CORS): ' + e.message);
+  }
+  console.log('[verifySession] status', res.status);
   if (!res.ok) throw new Error('HTTP '+res.status);
   const data = await res.json();
-  if (data.MessageCode !== 200) throw new Error(data.Message || 'Session ใช้ไม่ได้');
+  console.log('[verifySession] body', data);
+  if (data.MessageCode !== 200) throw new Error('Session ใช้ไม่ได้: ' + (data.Message || 'unknown') + ' (code '+data.MessageCode+')');
   const r = data.result || {};
-  const apiUrl = r.key_value?.["hosxp.api_url"] || r.user_info?.["hosxp.api_url"] || r.user_info?.bms_url;
-  const apiAuthKey = r.key_value?.["hosxp.api_auth_key"] || r.user_info?.["hosxp.api_auth_key"]
+  const kvObj = (r.key_value && typeof r.key_value === 'object') ? r.key_value : {};
+  const apiUrl = kvObj["hosxp.api_url"] || r.user_info?.["hosxp.api_url"] || r.user_info?.bms_url;
+  const apiAuthKey = kvObj["hosxp.api_auth_key"] || r.user_info?.["hosxp.api_auth_key"]
                    || r.user_info?.bms_session_code
                    || (typeof r.key_value === 'string' ? r.key_value : null);
   if (!apiUrl || !apiAuthKey) throw new Error('ไม่พบ API URL หรือ Auth Key ใน response');
