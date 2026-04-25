@@ -178,13 +178,19 @@ tailwind.config = {
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-2">
         <label class="block text-xs font-medium text-slate-600 mb-1">วันที่เริ่มต้น</label>
         <input id="dateFrom" type="date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
       </div>
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-2">
         <label class="block text-xs font-medium text-slate-600 mb-1">วันที่สิ้นสุด</label>
         <input id="dateTo" type="date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
+      </div>
+      <div class="lg:col-span-3">
+        <label class="block text-xs font-medium text-slate-600 mb-1">คลินิก</label>
+        <select id="filterClinic" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm bg-white">
+          <option value="">— ทุกคลินิก —</option>
+        </select>
       </div>
       <div class="lg:col-span-3">
         <label class="block text-xs font-medium text-slate-600 mb-1">สิทธิการรักษา</label>
@@ -192,11 +198,11 @@ tailwind.config = {
           <option value="">— ทุกสิทธิ —</option>
         </select>
       </div>
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-2">
         <label class="block text-xs font-medium text-slate-600 mb-1">ค้นหา HN / ชื่อ</label>
         <div class="relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="searchInput" type="text" placeholder="พิมพ์ HN หรือชื่อ..." class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
+          <input id="searchInput" type="text" placeholder="HN / ชื่อ" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
         </div>
       </div>
     </div>
@@ -365,6 +371,35 @@ function applySession(s) {
   $('userLocation').textContent = s.userLocation + (s.hospitalCode ? ' · '+s.hospitalCode : '');
   $('userInitial').textContent = (s.userName || '·').trim().charAt(0);
   $('loginOverlay').classList.add('hidden');
+  fetchClinics();
+}
+
+async function runQuery(sql) {
+  const res = await fetch(`${session.apiUrl}/api/sql`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + session.apiAuthKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ sql, app: APP_NAME })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.MessageCode !== 200) throw new Error(data.Message || 'API error');
+  return data.data || [];
+}
+
+async function fetchClinics() {
+  const sel = $('filterClinic');
+  try {
+    const rows = await runQuery("SELECT clinic, name FROM clinic WHERE active_status='Y' ORDER BY name");
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— ทุกคลินิก —</option>' +
+      rows.map(r => `<option value="${escapeHtml(r.clinic)}">${escapeHtml(r.clinic)} · ${escapeHtml(r.name)}</option>`).join('');
+    if (cur && Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+  } catch (e) {
+    console.error('[fetchClinics] failed', e);
+  }
 }
 
 function logout() {
@@ -415,7 +450,8 @@ function showLoginError(msg) {
 }
 
 // ===== SQL =====
-function buildSQL(dateFrom, dateTo) {
+function buildSQL(dateFrom, dateTo, clinicCode) {
+  const clinicWhere = clinicCode ? `AND c.clinic='${clinicCode.replace(/'/g, "''")}'` : '';
   return `
 SELECT
 MAX(sv.clinic_hd_service_id) AS id,
@@ -507,7 +543,7 @@ LEFT JOIN lab_order r ON r.lab_order_number=h.lab_order_number
 LEFT JOIN lab_items i ON i.lab_items_code=r.lab_items_code
 LEFT JOIN nondrugitems n ON n.icode=i.icode
 WHERE v.vstdate BETWEEN '${dateFrom}' AND '${dateTo}'
-AND c.clinic='009'
+${clinicWhere}
 GROUP BY v.vn
 ORDER BY MAX(sv.service_date) DESC, MAX(sv.service_time) DESC
 `.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').trim();
@@ -522,7 +558,8 @@ async function fetchData() {
   $('connStatus').textContent = 'กำลังโหลด...';
   $('statusDot').classList.remove('off');
 
-  const sql = buildSQL(dateFrom, dateTo);
+  const clinicCode = $('filterClinic').value;
+  const sql = buildSQL(dateFrom, dateTo, clinicCode);
   // Use POST + JSON body — full SQL exceeds nginx URL length limit (~8 KB) and yields 414
   try {
     const res = await fetch(`${session.apiUrl}/api/sql`, {
@@ -596,8 +633,11 @@ function renderAll() {
   $('recordCount').textContent = `${rows.length} รายการ`;
   const search = $('searchInput').value.trim();
   const pttype = $('filterPttype').value;
+  const clinicSel = $('filterClinic');
+  const clinicLabel = clinicSel.value ? clinicSel.options[clinicSel.selectedIndex].text : 'ทุกคลินิก';
   $('filterSummary').textContent =
     `${$('dateFrom').value} → ${$('dateTo').value}` +
+    ` · ${clinicLabel}` +
     (pttype ? ` · ${pttype}` : '') +
     (search ? ` · ค้นหา "${search}"` : '');
 }
@@ -785,6 +825,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnPrint').addEventListener('click', () => window.print());
   $('filterPttype').addEventListener('change', renderAll);
   $('searchInput').addEventListener('input', renderAll);
+  $('filterClinic').addEventListener('change', () => { if (session) fetchData(); });
 
   $('presetToday').addEventListener('click', () => { $('dateFrom').value=todayISO(); $('dateTo').value=todayISO(); fetchData(); });
   $('preset7d').addEventListener('click', () => { $('dateFrom').value=isoOffset(-7); $('dateTo').value=todayISO(); fetchData(); });
