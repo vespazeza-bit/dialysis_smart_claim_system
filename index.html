@@ -65,8 +65,79 @@ tailwind.config = {
   <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px), radial-gradient(circle at 80% 70%, white 1px, transparent 1px); background-size: 40px 40px;"></div>
   <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
     <div class="flex items-center justify-center mb-5">
-      <div class="w-16 h-16 rounded-2xl grad-bar-1 flex items-center justify-center text-white shadow-lg">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M5 10c0 6 7 12 7 12s7-6 7-12a7 7 0 0 0-14 0Z"/><circle cx="12" cy="10" r="2"/></svg>
+      <div class="w-16 h-16 rounded-2xl shadow-lg overflow-hidden">
+        <svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGrad" x1="0" y1="0" x2="100" y2="100">
+              <stop offset="0%" stop-color="#e0f2fe"/>
+              <stop offset="50%" stop-color="#f0f9ff"/>
+              <stop offset="100%" stop-color="#dbeafe"/>
+            </linearGradient>
+            <linearGradient id="kidneyGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fda4af"/>
+              <stop offset="40%" stop-color="#f43f5e"/>
+              <stop offset="100%" stop-color="#be123c"/>
+            </linearGradient>
+            <linearGradient id="kidneyShine" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="white" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="blur1" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.5"/>
+            </filter>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0.5" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <rect width="100" height="100" fill="url(#bgGrad)" rx="16"/>
+          <!-- Kidney -->
+          <g transform="translate(8,18)" filter="url(#shadow)">
+            <path d="M28,8 C38,2 48,8 48,22 C48,34 40,42 32,44 C28,45 28,48 28,52 L28,58 C28,60 26,62 24,62 C22,62 20,60 20,58 L20,52 C20,48 20,45 16,44 C8,42 0,34 0,22 C0,8 10,2 20,8 C22,9 24,10 24,12 C24,10 26,9 28,8Z" fill="url(#kidneyGrad)"/>
+            <ellipse cx="18" cy="22" rx="6" ry="10" fill="url(#kidneyShine)"/>
+            <!-- Artery (red) -->
+            <path d="M24,12 Q30,5 38,8" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="38" cy="8" r="2.5" fill="#ef4444"/>
+            <!-- Vein (blue) -->
+            <path d="M22,14 Q28,18 36,16" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <circle cx="36" cy="16" r="2" fill="#3b82f6"/>
+            <!-- Ureter -->
+            <path d="M24,62 Q24,72 30,78" stroke="#fcd34d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+          <!-- Document Card -->
+          <g transform="translate(54,14)" filter="url(#shadow)">
+            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.55)" stroke="rgba(217,170,90,0.6)" stroke-width="1.2"/>
+            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.25)" filter="url(#blur1)"/>
+            <!-- Currency lines -->
+            <circle cx="8" cy="10" r="3" fill="#f59e0b" opacity="0.9"/>
+            <text x="8" y="11.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">¥</text>
+            <line x1="14" y1="9" x2="28" y2="9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="12" x2="24" y2="12" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="8" cy="20" r="3" fill="#10b981" opacity="0.9"/>
+            <text x="8" y="21.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">฿</text>
+            <line x1="14" y1="19" x2="28" y2="19" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="22" x2="24" y2="22" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="8" cy="30" r="3" fill="#6366f1" opacity="0.9"/>
+            <text x="8" y="31.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">N</text>
+            <line x1="14" y1="29" x2="28" y2="29" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="32" x2="24" y2="32" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <!-- Green arrow button -->
+            <rect x="20" y="37" width="10" height="5" rx="2.5" fill="#22c55e"/>
+            <path d="M23,39.5 L26,39.5 M25,38.5 L26,39.5 L25,40.5" stroke="white" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <!-- Coins & Banknotes at bottom -->
+          <g transform="translate(20,72)" filter="url(#shadow)">
+            <!-- Banknotes stack -->
+            <rect x="0" y="2" width="28" height="10" rx="2" fill="#10b981" transform="rotate(-6,14,7)"/>
+            <rect x="0" y="2" width="28" height="10" rx="2" fill="#059669" transform="rotate(-3,14,7)"/>
+            <rect x="0" y="0" width="28" height="10" rx="2" fill="#34d399"/>
+            <rect x="8" y="3" width="12" height="4" rx="1" fill="rgba(255,255,255,0.3)"/>
+            <!-- Coins stack -->
+            <ellipse cx="44" cy="14" rx="8" ry="3" fill="#ca8a04"/>
+            <rect x="36" y="8" width="16" height="6" rx="1" fill="#eab308"/>
+            <ellipse cx="44" cy="8" rx="8" ry="3" fill="#facc15"/>
+            <text x="44" y="11.5" font-size="5" fill="#a16207" text-anchor="middle" font-weight="bold">฿</text>
+          </g>
+        </svg>
       </div>
     </div>
     <h1 class="font-display text-2xl font-bold text-center bg-gradient-to-r from-brand-700 to-teal2-600 bg-clip-text text-transparent">Dialysis Smart Claim</h1>
@@ -93,8 +164,65 @@ tailwind.config = {
 <header class="sticky top-0 z-30 glass border-b border-white/40 shadow-sm no-print">
   <div class="max-w-[1600px] mx-auto px-6 py-3 flex items-center gap-4">
     <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-xl grad-bar-1 flex items-center justify-center text-white shadow-md">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M5 10c0 6 7 12 7 12s7-6 7-12a7 7 0 0 0-14 0Z"/><circle cx="12" cy="10" r="2"/></svg>
+      <div class="w-11 h-11 rounded-xl shadow-md overflow-hidden">
+        <svg viewBox="0 0 100 100" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGrad2" x1="0" y1="0" x2="100" y2="100">
+              <stop offset="0%" stop-color="#e0f2fe"/>
+              <stop offset="50%" stop-color="#f0f9ff"/>
+              <stop offset="100%" stop-color="#dbeafe"/>
+            </linearGradient>
+            <linearGradient id="kidneyGrad2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fda4af"/>
+              <stop offset="40%" stop-color="#f43f5e"/>
+              <stop offset="100%" stop-color="#be123c"/>
+            </linearGradient>
+            <linearGradient id="kidneyShine2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="white" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0.5" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <rect width="100" height="100" fill="url(#bgGrad2)" rx="16"/>
+          <g transform="translate(8,18)" filter="url(#shadow2)">
+            <path d="M28,8 C38,2 48,8 48,22 C48,34 40,42 32,44 C28,45 28,48 28,52 L28,58 C28,60 26,62 24,62 C22,62 20,60 20,58 L20,52 C20,48 20,45 16,44 C8,42 0,34 0,22 C0,8 10,2 20,8 C22,9 24,10 24,12 C24,10 26,9 28,8Z" fill="url(#kidneyGrad2)"/>
+            <ellipse cx="18" cy="22" rx="6" ry="10" fill="url(#kidneyShine2)"/>
+            <path d="M24,12 Q30,5 38,8" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="38" cy="8" r="2.5" fill="#ef4444"/>
+            <path d="M22,14 Q28,18 36,16" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <circle cx="36" cy="16" r="2" fill="#3b82f6"/>
+            <path d="M24,62 Q24,72 30,78" stroke="#fcd34d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(54,14)" filter="url(#shadow2)">
+            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.55)" stroke="rgba(217,170,90,0.6)" stroke-width="1.2"/>
+            <circle cx="8" cy="10" r="3" fill="#f59e0b" opacity="0.9"/>
+            <text x="8" y="11.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">¥</text>
+            <line x1="14" y1="9" x2="28" y2="9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="12" x2="24" y2="12" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="8" cy="20" r="3" fill="#10b981" opacity="0.9"/>
+            <text x="8" y="21.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">฿</text>
+            <line x1="14" y1="19" x2="28" y2="19" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="22" x2="24" y2="22" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="8" cy="30" r="3" fill="#6366f1" opacity="0.9"/>
+            <text x="8" y="31.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">N</text>
+            <line x1="14" y1="29" x2="28" y2="29" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="14" y1="32" x2="24" y2="32" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
+            <rect x="20" y="37" width="10" height="5" rx="2.5" fill="#22c55e"/>
+            <path d="M23,39.5 L26,39.5 M25,38.5 L26,39.5 L25,40.5" stroke="white" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <g transform="translate(20,72)" filter="url(#shadow2)">
+            <rect x="0" y="2" width="28" height="10" rx="2" fill="#10b981" transform="rotate(-6,14,7)"/>
+            <rect x="0" y="2" width="28" height="10" rx="2" fill="#059669" transform="rotate(-3,14,7)"/>
+            <rect x="0" y="0" width="28" height="10" rx="2" fill="#34d399"/>
+            <rect x="8" y="3" width="12" height="4" rx="1" fill="rgba(255,255,255,0.3)"/>
+            <ellipse cx="44" cy="14" rx="8" ry="3" fill="#ca8a04"/>
+            <rect x="36" y="8" width="16" height="6" rx="1" fill="#eab308"/>
+            <ellipse cx="44" cy="8" rx="8" ry="3" fill="#facc15"/>
+            <text x="44" y="11.5" font-size="5" fill="#a16207" text-anchor="middle" font-weight="bold">฿</text>
+          </g>
+        </svg>
       </div>
       <div>
         <h1 class="font-display text-lg font-bold leading-tight bg-gradient-to-r from-brand-700 to-teal2-600 bg-clip-text text-transparent">ทะเบียนผู้รับบริการฟอกไต</h1>
@@ -177,7 +305,7 @@ tailwind.config = {
       <div class="text-xs text-slate-500"><span id="filterSummary">—</span></div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-15 gap-3 items-end">
       <div class="lg:col-span-3">
         <label class="block text-xs font-medium text-slate-600 mb-1">วันที่เริ่มต้น</label>
         <input id="dateFrom" type="date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
@@ -185,6 +313,12 @@ tailwind.config = {
       <div class="lg:col-span-3">
         <label class="block text-xs font-medium text-slate-600 mb-1">วันที่สิ้นสุด</label>
         <input id="dateTo" type="date" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
+      </div>
+      <div class="lg:col-span-3">
+        <label class="block text-xs font-medium text-slate-600 mb-1">คลินิก</label>
+        <select id="filterClinic" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm bg-white">
+          <option value="">— ทุกคลินิก —</option>
+        </select>
       </div>
       <div class="lg:col-span-3">
         <label class="block text-xs font-medium text-slate-600 mb-1">สิทธิการรักษา</label>
@@ -199,6 +333,13 @@ tailwind.config = {
           <input id="searchInput" type="text" placeholder="พิมพ์ HN หรือชื่อ..." class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
         </div>
       </div>
+    </div>
+
+    <div class="flex items-center gap-4 mt-3">
+      <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+        <input id="filterReady" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+        <span class="text-sm text-slate-700">แสดงเฉพาะที่พร้อมส่ง (Complete)</span>
+      </label>
     </div>
 
     <div class="flex flex-wrap items-center gap-2 mt-4">
@@ -307,6 +448,7 @@ const LEGACY_STORAGE_KEY = "dscs.session"; // for cleanup of old cached sessions
 let session = null;
 let allRows = [];
 let pttypeOptions = new Set();
+let clinicList = [];
 
 // ===== HELPERS =====
 const $ = (id) => document.getElementById(id);
@@ -365,6 +507,41 @@ function applySession(s) {
   $('userLocation').textContent = s.userLocation + (s.hospitalCode ? ' · '+s.hospitalCode : '');
   $('userInitial').textContent = (s.userName || '·').trim().charAt(0);
   $('loginOverlay').classList.add('hidden');
+  fetchClinics();
+}
+
+async function fetchClinics() {
+  if (!session) return;
+  const sql = "SELECT clinic, name FROM clinic WHERE active_status='Y' ORDER BY name";
+  try {
+    const res = await fetch(`${session.apiUrl}/api/sql`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + session.apiAuthKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sql, app: APP_NAME })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.MessageCode !== 200) return;
+    clinicList = data.data || [];
+    const sel = $('filterClinic');
+    const cur = sel.value;
+    sel.innerHTML = '';
+    const optAll = document.createElement('option');
+    optAll.value = ''; optAll.textContent = '— ทุกคลินิก —';
+    sel.appendChild(optAll);
+    clinicList.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.clinic || '';
+      opt.textContent = c.name || c.clinic || '';
+      sel.appendChild(opt);
+    });
+    sel.value = cur;
+  } catch (e) {
+    console.error('[fetchClinics] error', e);
+  }
 }
 
 function logout() {
@@ -415,7 +592,9 @@ function showLoginError(msg) {
 }
 
 // ===== SQL =====
-function buildSQL(dateFrom, dateTo) {
+function buildSQL(dateFrom, dateTo, clinic, readyOnly) {
+  const clinicFilter = clinic ? `AND c.clinic='${clinic}'` : "AND c.clinic='009'";
+  const readyFilter = readyOnly ? "AND sv.clinic_hd_dch_type_id='1'" : '';
   return `
 SELECT
 MAX(sv.clinic_hd_service_id) AS id,
@@ -507,7 +686,8 @@ LEFT JOIN lab_order r ON r.lab_order_number=h.lab_order_number
 LEFT JOIN lab_items i ON i.lab_items_code=r.lab_items_code
 LEFT JOIN nondrugitems n ON n.icode=i.icode
 WHERE v.vstdate BETWEEN '${dateFrom}' AND '${dateTo}'
-AND c.clinic='009'
+${clinicFilter}
+${readyFilter}
 GROUP BY v.vn
 ORDER BY MAX(sv.service_date) DESC, MAX(sv.service_time) DESC
 `.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').trim();
@@ -522,7 +702,9 @@ async function fetchData() {
   $('connStatus').textContent = 'กำลังโหลด...';
   $('statusDot').classList.remove('off');
 
-  const sql = buildSQL(dateFrom, dateTo);
+  const clinic = $('filterClinic').value;
+  const readyOnly = $('filterReady').checked;
+  const sql = buildSQL(dateFrom, dateTo, clinic, readyOnly);
   // Use POST + JSON body — full SQL exceeds nginx URL length limit (~8 KB) and yields 414
   try {
     const res = await fetch(`${session.apiUrl}/api/sql`, {
@@ -596,10 +778,15 @@ function renderAll() {
   $('recordCount').textContent = `${rows.length} รายการ`;
   const search = $('searchInput').value.trim();
   const pttype = $('filterPttype').value;
+  const clinic = $('filterClinic').value;
+  const readyOnly = $('filterReady').checked;
+  const clinicName = clinic ? (clinicList.find(c => c.clinic === clinic)?.name || clinic) : '';
   $('filterSummary').textContent =
     `${$('dateFrom').value} → ${$('dateTo').value}` +
+    (clinicName ? ` · ${clinicName}` : '') +
     (pttype ? ` · ${pttype}` : '') +
-    (search ? ` · ค้นหา "${search}"` : '');
+    (search ? ` · ค้นหา "${search}"` : '') +
+    (readyOnly ? ' · พร้อมส่ง' : '');
 }
 
 function renderStats(rows) {
@@ -784,6 +971,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnExport').addEventListener('click', exportCSV);
   $('btnPrint').addEventListener('click', () => window.print());
   $('filterPttype').addEventListener('change', renderAll);
+  $('filterClinic').addEventListener('change', fetchData);
+  $('filterReady').addEventListener('change', fetchData);
   $('searchInput').addEventListener('input', renderAll);
 
   $('presetToday').addEventListener('click', () => { $('dateFrom').value=todayISO(); $('dateTo').value=todayISO(); fetchData(); });
