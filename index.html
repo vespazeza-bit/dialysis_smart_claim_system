@@ -862,6 +862,7 @@ function initQueueScreen() {
   if (f && !f.value) { f.value = today; updateDateLabel('q-date-from'); }
   if (t && !t.value) { t.value = today; updateDateLabel('q-date-to'); }
   loadQueueDropdowns(f ? f.value : today, t ? t.value : today);
+  updateClaimButtons();
   if (APP.apiUrl) searchQueue();
 }
 
@@ -897,6 +898,7 @@ async function searchQueue() {
 
     if (sum) sum.textContent = `พบ ${display.length} รายการ (ทั้งหมด ${queueRows.length} รายการ)`;
     renderQueue(display);
+    updateClaimButtons();
   } catch(e) {
     if (tbl) tbl.innerHTML = `<div style="padding:32px;text-align:center;color:#cf3b3b;font-size:13.5px;">เกิดข้อผิดพลาด: ${e.message}</div>`;
   }
