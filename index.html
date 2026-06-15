@@ -756,77 +756,76 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(st.age_y) AS age,
     MAX(pe.name) AS pttype,
     MAX(pe.hipdata_code) AS hipdata,
+    '' AS date_hd,
     MAX(sv.service_date) AS onset,
-    MAX(TIME(sv.session_onset_time)) AS onset_time,
-    MAX(TIME(sv.session_off_time)) AS off_time,
+    MAX(sv.service_time) AS onset_time,
+    MAX(sv.session_off_time) AS off_time,
     MAX(sv.weight_pre_kgs) AS pre_weight,
-    MAX(CASE WHEN cvs.clinic_hd_service_vs_type_id='1' THEN bp.bps END) AS pre_bps,
-    MAX(CASE WHEN cvs.clinic_hd_service_vs_type_id='1' THEN bp.bpd END) AS pre_bpd,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bps END) AS pre_bps,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bpd END) AS pre_bpd,
     MAX(sv.weight_post_kgs) AS post_weight,
-    MAX(CASE WHEN cvs.clinic_hd_service_vs_type_id='3' THEN bp.bps END) AS post_bps,
-    MAX(CASE WHEN cvs.clinic_hd_service_vs_type_id='3' THEN bp.bpd END) AS post_bpd,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bps END) AS post_bps,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bpd END) AS post_bpd,
     MAX(s.height) AS height,
     MAX(lab3.creatinine) AS creatinine,
     MAX(lab3.albumin) AS albumin,
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
-    ROUND(((MAX(lab3.pre_bun)-MAX(lab3.post_bun))/NULLIF(MAX(lab3.pre_bun),0))*100,2) AS urr,
-    ROUND(((MAX(lab3.pre_bun)-MAX(lab3.post_bun))*4)/NULLIF(CASE WHEN MAX(p.sex)='1' THEN MAX(sv.weight_post_kgs)*0.6 WHEN MAX(p.sex)='2' THEN MAX(sv.weight_post_kgs)*0.45 END,0),2) AS ktv,
+    ROUND(((MAX(lab3.pre_bun)-MAX(lab3.post_bun))/NULLIF(MAX(lab3.pre_bun)*1.0,0))*100,2) AS urr,
+    ROUND(((MAX(lab3.pre_bun)-MAX(lab3.post_bun))*4)/NULLIF(CASE WHEN MAX(p.sex)='1' THEN MAX(sv.weight_post_kgs)*0.6 WHEN MAX(p.sex)='2' THEN MAX(sv.weight_post_kgs)*0.45 ELSE NULL END,0),2) AS ktv,
     MAX(lab3.hb) AS hb,
-    MAX(lab3.hct) AS hct,
     MAX(lab3.pre_bun) AS pre_dialysis_bun,
     MAX(lab3.post_bun) AS post_dialysis_bun,
-    (SELECT SUM(o.sum_price) FROM opitemrece o WHERE o.vn=v.vn AND o.income='06') AS blood_flow,
-    MAX(CASE WHEN mm.dmis_export IN('1','2','3') THEN mm.membrane_type_name ELSE NULL END) AS membrane,
-    MAX(dt.dialyzer_type_name) AS dialyzer,
+    (SELECT SUM(o.sum_price) FROM opitemrece o WHERE o.vn=v.vn AND o.income IN('06')) AS blood_flow,
+    MAX(m.clinic_hd_machine_name) AS membrane,
+    MAX(di.clinic_hd_dialyzer_name) AS dialyzer,
     MAX(CASE WHEN ckd.clinic_hd_asm_va_type_id='1' THEN 'shunt' ELSE 'graft' END) AS vascular_access,
     MAX(CASE WHEN ckd.clinic_hd_asm_catheter_type='DLC' THEN 'temp cath' ELSE 'pem cath' END) AS cath,
-    MAX(CASE dc.dmis_code WHEN '1' THEN 'Complete' WHEN '2' THEN 'Unstable' WHEN '3' THEN 'Hemofiltration' WHEN '4' THEN 'Initial' END) AS spec_cond,
-    MAX(CASE WHEN TIMESTAMPDIFF(MINUTE,sv.session_onset_time,sv.session_off_time)<240 THEN dr.reason_name ELSE NULL END) AS reason,
-    MAX(CASE WHEN v.an IS NOT NULL AND v.an<>'' THEN 'IPD' ELSE 'OPD' END) AS patient_type,
+    MAX(CASE WHEN sv.clinic_hd_dch_type_id='1' THEN 'Complete' WHEN sv.clinic_hd_dch_type_id='2' THEN 'Unstable' WHEN sv.clinic_hd_dch_type_id='3' THEN 'Hemofiltration' WHEN sv.clinic_hd_dch_type_id='4' THEN 'Initial' ELSE NULL END) AS spec_cond,
+    MAX(CASE WHEN v.an<>'' AND v.an IS NOT NULL THEN 'IPD' ELSE 'OPD' END) AS patient_type,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
     'Chronic' AS hd_mode,
-    (SELECT SUM(oo.sum_price) FROM opitemrece oo INNER JOIN nondrugitems nn ON nn.icode=oo.icode WHERE oo.vn=v.vn AND nn.billcode IN('71640','71641')) AS hd_claim,
-    (SELECT GROUP_CONCAT(DISTINCT mt.clinic_hd_med_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list ml INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id=ml.clinic_hd_med_type_id WHERE ml.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS esa_epo,
-    (SELECT GROUP_CONCAT(DISTINCT ml2.qty SEPARATOR ', ') FROM clinic_hd_service_med_list ml2 WHERE ml2.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS qty,
-    (SELECT GROUP_CONCAT(DISTINCT mr.clinic_hd_med_route_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list ml3 INNER JOIN clinic_hd_med_route_type mr ON mr.clinic_hd_med_route_type_id=ml3.clinic_hd_med_route_type_id WHERE ml3.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS route,
-    (SELECT SUM(oi.sum_price) FROM opitemrece oi INNER JOIN drugitems d2 ON d2.icode=oi.icode WHERE oi.vn=v.vn AND d2.sks_drug_code='755043') AS iv_iron,
+    MAX(lab3.hct) AS hct,
+    (SELECT SUM(o.sum_price) FROM opitemrece o INNER JOIN nondrugitems n ON o.icode=n.icode WHERE o.vn=v.vn AND n.billcode IN('71641','71640')) AS hd_claim,
+    (SELECT GROUP_CONCAT(DISTINCT med.clinic_hd_med_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_type med ON med.clinic_hd_med_type_id=md.clinic_hd_med_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS esa_epo,
+    (SELECT GROUP_CONCAT(DISTINCT md.qty SEPARATOR ', ') FROM clinic_hd_service_med_list md WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS qty,
+    (SELECT GROUP_CONCAT(DISTINCT mr.clinic_hd_med_route_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_route_type mr ON mr.clinic_hd_med_route_type_id=md.clinic_hd_med_route_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS route,
+    (SELECT SUM(o.sum_price) FROM opitemrece o INNER JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN('755043')) AS iv_iron,
     MAX(pcr.clinic_hd_service_pcr_vol) AS blood_flow_rate,
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
-    (SELECT SUM(oi2.sum_price) FROM opitemrece oi2 INNER JOIN drugitems d3 ON d3.icode=oi2.icode WHERE oi2.vn=v.vn AND d3.sks_drug_code IN('107134','107110')) AS lowmolheparin,
+    (SELECT SUM(o.sum_price) FROM opitemrece o INNER JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN('107134','107110')) AS lowmolheparin,
     '' AS dbllumen,
-    (SELECT SUM(oi3.sum_price) FROM opitemrece oi3 INNER JOIN nondrugitems n3 ON n3.icode=oi3.icode WHERE oi3.vn=v.vn AND n3.billcode='55820') AS parnutr,
-    (SELECT SUM(oi4.sum_price) FROM opitemrece oi4 WHERE oi4.vn=v.vn AND oi4.income IN('07','08')) AS lab_xray,
-    (SELECT SUM(oi5.sum_price) FROM opitemrece oi5 INNER JOIN nondrugitems n5 ON n5.icode=oi5.icode WHERE oi5.vn=v.vn AND n5.billcode='34116') AS humanalb
+    (SELECT SUM(o2.sum_price) FROM opitemrece o2 INNER JOIN nondrugitems nn ON nn.icode=o2.icode WHERE o2.vn=v.vn AND nn.billcode='55820') AS parnutr,
+    (SELECT SUM(o1.sum_price) FROM opitemrece o1 WHERE o1.vn=v.vn AND o1.income IN('07','08')) AS lab_xray,
+    (SELECT SUM(o3.sum_price) FROM opitemrece o3 INNER JOIN nondrugitems n ON n.icode=o3.icode WHERE o3.vn=v.vn AND n.billcode='34116') AS humanalb
   FROM clinic_hd_service sv
-  INNER JOIN ovst v ON v.vn=sv.vn
-  INNER JOIN clinicmember c ON c.hn=v.hn
-  INNER JOIN patient p ON p.hn=v.hn
+  LEFT JOIN ovst v ON sv.vn=v.vn
   INNER JOIN vn_stat st ON st.vn=v.vn
-  LEFT JOIN opdscreen s ON s.vn=v.vn
+  INNER JOIN opdscreen s ON s.vn=v.vn
+  LEFT JOIN opdscreen_bp bp ON bp.vn=v.vn
+  INNER JOIN patient p ON p.hn=v.hn
   INNER JOIN visit_pttype vp ON vp.vn=v.vn
   INNER JOIN pttype pe ON pe.pttype=vp.pttype
+  INNER JOIN clinicmember c ON c.hn=v.hn
   LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
-  LEFT JOIN dialyzer_type dt ON dt.dialyzer_type_id=di.dialyzer_type_id
-  LEFT JOIN membrane_type mm ON mm.membrane_type_id=di.membrane_type_id
-  LEFT JOIN clinic_hd_dch_type dc ON dc.clinic_hd_dch_type_id=sv.clinic_hd_dch_type_id
-  LEFT JOIN hd_short_dialysis_reason dr ON dr.id=sv.hd_short_dialysis_reason_id
-  LEFT JOIN clinic_hd_service_vs cvs ON cvs.clinic_hd_service_id=sv.clinic_hd_service_id
-  LEFT JOIN opdscreen_bp bp ON bp.opdscreen_bp_id=cvs.clinic_hd_service_vs_opds_bp
-  LEFT JOIN clinic_hd_service_ckd ckd ON ckd.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN clinic_hd_machine m ON m.clinic_hd_machine_id=sv.clinic_hd_machine_id
   LEFT JOIN clinic_hd_service_pcr pcr ON pcr.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN clinic_hd_service_vs vs ON vs.clinic_hd_service_vs_opds_bp=bp.opdscreen_bp_id
+  LEFT JOIN clinic_hd_service_ckd ckd ON ckd.clinic_hd_service_id=sv.clinic_hd_service_id
   LEFT JOIN (
-    SELECT h2.hn,
-      MAX(CASE WHEN lk.ckd_lab_code_id='11' THEN r2.lab_order_result END) AS creatinine,
-      MAX(CASE WHEN lk.ckd_lab_code_id='21' THEN r2.lab_order_result END) AS albumin,
-      MAX(CASE WHEN lk.ckd_lab_code_id='1' THEN r2.lab_order_result END) AS hb,
-      MAX(CASE WHEN lk.ckd_lab_code_id='2' THEN r2.lab_order_result END) AS hct,
-      MAX(CASE WHEN lk.ckd_lab_code_id='10' THEN r2.lab_order_result END) AS pre_bun,
-      MAX(CASE WHEN lk.ckd_lab_code_id='43' THEN r2.lab_order_result END) AS post_bun
-    FROM lab_head h2
-    INNER JOIN lab_order r2 ON r2.lab_order_number=h2.lab_order_number
-    INNER JOIN ckd_lab_link lk ON lk.lab_items_code=r2.lab_items_code
-    WHERE h2.order_date>=DATE_SUB(CURDATE(),INTERVAL 3 MONTH)
-    GROUP BY h2.hn
+    SELECT v2.hn,
+      MAX(CASE WHEN n2.billcode='32202' THEN r2.lab_order_result END) AS creatinine,
+      MAX(CASE WHEN n2.billcode='32403' THEN r2.lab_order_result END) AS albumin,
+      MAX(CASE WHEN n2.billcode='32405' THEN r2.lab_order_result END) AS hb,
+      MAX(CASE WHEN n2.billcode='32201' THEN r2.lab_order_result END) AS pre_bun,
+      MAX(CASE WHEN n2.billcode='32203' THEN r2.lab_order_result END) AS post_bun,
+      MAX(CASE WHEN n2.billcode='30104' THEN r2.lab_order_result END) AS hct
+    FROM ovst v2
+    LEFT JOIN lab_head h2 ON h2.vn=v2.vn
+    LEFT JOIN lab_order r2 ON r2.lab_order_number=h2.lab_order_number
+    LEFT JOIN lab_items i2 ON i2.lab_items_code=r2.lab_items_code
+    LEFT JOIN nondrugitems n2 ON n2.icode=i2.icode
+    WHERE v2.vstdate>=DATE_SUB(CURDATE(),INTERVAL 3 MONTH)
+    GROUP BY v2.hn
   ) lab3 ON lab3.hn=v.hn
   WHERE ${where}
   GROUP BY v.vn`;
@@ -1259,7 +1258,7 @@ async function executeSqlViaApi(sql) {
 
   // Aggressive minification: remove comments, collapse whitespace, trim around punctuation
   const minified = sql
-    .replace(/--[^\n]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '')
     .replace(/\s+/g, ' ')
     .replace(/\( /g, '(').replace(/ \)/g, ')')
     .replace(/ ,/g, ',').replace(/, /g, ',')
