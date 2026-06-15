@@ -283,7 +283,7 @@
             </button>
             <button class="btn-ghost" style="border-color:#2563a8;color:#2563a8;" onclick="openConfirmScreen()">ยืนยันพร้อมส่ง</button>
             <button id="btn-send-hd" class="btn-ghost" style="border-color:#1a7a4a;color:#1a7a4a;" onclick="" disabled>ส่งเคลม HD</button>
-            <button id="btn-send-dmis" class="btn-orange" onclick="" disabled>ส่งเคลม DMIS</button>
+            <button id="btn-send-dmis" class="btn-orange" onclick="openDmisLogin()" disabled>ส่งเคลม DMIS</button>
           </div>
         </div>
         <!-- Table -->
@@ -923,6 +923,56 @@ function updateClaimButtons() {
   }
 }
 
+function openDmisLogin() {
+  const ov = document.getElementById('dmis-login-overlay');
+  if (!ov) return;
+  // reset warn
+  const warn = document.getElementById('dmis-login-warn');
+  if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
+  // reset fields
+  const u = document.getElementById('dmis-user');
+  const p = document.getElementById('dmis-pass');
+  if (u) u.value = 'admin';
+  if (p) p.value = 'dmis2569';
+  ov.style.display = 'flex';
+}
+
+function closeDmisLogin() {
+  const ov = document.getElementById('dmis-login-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+function toggleDmisPass() {
+  const p = document.getElementById('dmis-pass');
+  if (p) p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function submitDmisLogin() {
+  const user = document.getElementById('dmis-user')?.value.trim();
+  const pass = document.getElementById('dmis-pass')?.value;
+  const warn = document.getElementById('dmis-login-warn');
+  const btn  = document.getElementById('dmis-login-btn');
+  if (!user || !pass) {
+    if (warn) { warn.textContent = '⚠ กรุณากรอก Username และ Password'; warn.style.display = 'block'; }
+    return;
+  }
+  if (btn) { btn.textContent = 'กำลังเข้าสู่ระบบ…'; btn.disabled = true; }
+  // simulate login attempt
+  setTimeout(() => {
+    if (btn) { btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false; }
+    if (warn) {
+      warn.innerHTML = '⚠️ DMIS server ยังไม่พร้อม (HTTP 405) — รอสักครู่แล้วลองใหม่ หรือรัน start_server.bat';
+      warn.style.display = 'block';
+    }
+  }, 1200);
+}
+
+// ปิด overlay เมื่อคลิก background
+document.addEventListener('click', function(e) {
+  const ov = document.getElementById('dmis-login-overlay');
+  if (ov && e.target === ov) closeDmisLogin();
+});
+
 function exportQueueExcel() {
   if (!queueRows.length) { alert('ไม่มีข้อมูลสำหรับ Export'); return; }
   const cols = [
@@ -1493,6 +1543,72 @@ window.addEventListener('DOMContentLoaded', async () => {
 </style>
 
 <!-- ============ CONFIRM OVERLAY ============ -->
+<!-- ===== DMIS LOGIN OVERLAY ===== -->
+<div id="dmis-login-overlay" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;font-family:'Sarabun',sans-serif;background:linear-gradient(160deg,#c8d8f0 0%,#dde8f8 40%,#e8f0fb 100%);">
+  <div style="background:#fff;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.15);width:100%;max-width:420px;padding:36px 36px 28px;position:relative;">
+    <!-- Close -->
+    <button onclick="closeDmisLogin()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;color:#8b99a9;cursor:pointer;line-height:1;">✕</button>
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:10px;">
+      <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:72px;height:72px;border:2.5px solid #2962cc;border-radius:14px;margin-bottom:8px;">
+        <div style="font-size:26px;color:#2962cc;font-weight:900;line-height:1;">+</div>
+        <div style="font-size:10px;font-weight:700;color:#2962cc;line-height:1.2;text-align:center;">สปสช.<br><span style="font-size:8.5px;font-weight:400;color:#5578b0;">สำนักงานหลักประกัน<br>สุขภาพแห่งชาติ</span></div>
+      </div>
+      <div style="font-size:12.5px;color:#2962cc;font-weight:600;margin-bottom:16px;">บัญชีเดียวกันทุกบริการงานทะเบียนหน่วยบริการ (One Stop Service)</div>
+      <div style="font-size:20px;font-weight:700;color:#1a2744;margin-bottom:6px;">e-Authentication (SSO)</div>
+      <span style="background:#1a2744;color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:3px 14px;letter-spacing:.5px;">V DMIS.01</span>
+    </div>
+    <!-- Warning -->
+    <div id="dmis-login-warn" style="display:none;background:#fff5f5;border:1px solid #f5c6c6;border-radius:10px;padding:10px 14px;margin:14px 0 6px;font-size:12.5px;color:#c0392b;"></div>
+    <!-- Form -->
+    <div style="margin-top:16px;">
+      <input id="dmis-user" type="text" value="admin"
+        style="width:100%;box-sizing:border-box;border:1.5px solid #c8d6e8;border-radius:10px;padding:12px 14px;font-family:inherit;font-size:14px;color:#1a2744;margin-bottom:12px;outline:none;"
+        onfocus="this.style.borderColor='#2962cc'" onblur="this.style.borderColor='#c8d6e8'">
+      <div style="position:relative;">
+        <input id="dmis-pass" type="password" value="dmis2569"
+          style="width:100%;box-sizing:border-box;border:1.5px solid #c8d6e8;border-radius:10px;padding:12px 42px 12px 14px;font-family:inherit;font-size:14px;color:#1a2744;outline:none;"
+          onfocus="this.style.borderColor='#2962cc'" onblur="this.style.borderColor='#c8d6e8'">
+        <button onclick="toggleDmisPass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:17px;color:#8b99a9;">👁</button>
+      </div>
+      <div style="text-align:right;margin-top:6px;margin-bottom:16px;">
+        <a href="#" style="font-size:12.5px;color:#2962cc;text-decoration:none;">ลืมรหัสผ่าน?</a>
+      </div>
+      <button onclick="submitDmisLogin()" id="dmis-login-btn"
+        style="width:100%;background:#2962cc;color:#fff;border:none;border-radius:10px;padding:14px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.3px;">
+        เข้าสู่ระบบ
+      </button>
+    </div>
+    <!-- Divider -->
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px;">
+      <div style="flex:1;height:1px;background:#e4e9f0;"></div>
+      <div style="font-size:12px;color:#8b99a9;white-space:nowrap;">หรือดำเนินการต่อด้วย</div>
+      <div style="flex:1;height:1px;background:#e4e9f0;"></div>
+    </div>
+    <!-- Alt login -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <button style="display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid #d0d8e8;border-radius:10px;padding:10px;background:#fff;font-family:inherit;font-size:13px;color:#1a2744;font-weight:600;cursor:pointer;">
+        <span style="width:22px;height:22px;border-radius:50%;background:#e8001c;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:900;">บ</span>
+        Smart Card
+      </button>
+      <button style="display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid #d0d8e8;border-radius:10px;padding:10px;background:#fff;font-family:inherit;font-size:13px;color:#1a2744;font-weight:600;cursor:pointer;">
+        <span style="width:22px;height:22px;border-radius:50%;background:#ff8c00;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:900;">ไ</span>
+        ThaiD
+      </button>
+    </div>
+    <div style="text-align:center;margin-bottom:14px;">
+      <a href="#" style="font-size:12px;color:#2962cc;text-decoration:none;">วิธีการลงชื่อเข้าใช้รูปแบบอื่น</a>
+    </div>
+    <div style="text-align:center;font-size:12px;color:#55677d;margin-bottom:8px;">
+      ยังไม่มีบัญชีผู้ใช้งาน SSO? <a href="#" style="color:#2962cc;font-weight:600;">สมัครสมาชิก</a>
+    </div>
+    <div style="text-align:center;font-size:11.5px;">
+      <a href="#" style="color:#2962cc;display:block;margin-bottom:3px;">ลิงค์ไปยังระบบรวมศูนย์กลางบริการระบบงานขึ้นทะเบียน (e-Portal)</a>
+      <a href="#" style="color:#2962cc;display:block;">ลิงค์ไปยังระบบรวมศูนย์กลางบริการระบบงานลงทะเบียน (SRM-Portal)</a>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-overlay" style="display:none;position:fixed;inset:0;z-index:200;flex-direction:column;background:#f4f7fb;font-family:'Sarabun',sans-serif;">
 
   <!-- Header -->
