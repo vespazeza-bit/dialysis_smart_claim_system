@@ -57,12 +57,14 @@
     background: #f0871f; color: #fff; border: none; border-radius: 9px;
     padding: 9px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
   }
-  .btn-orange:hover { background: #d97518; }
+  .btn-orange:hover:not(:disabled) { background: #d97518; }
+  .btn-orange:disabled { background: #c8d1dc; color: #8b99a9; cursor: not-allowed; opacity: 1; }
   .btn-ghost {
     background: #eef3f8; color: #1d4e89; border: 1px solid #d6e2ee; border-radius: 7px;
     padding: 6px 13px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   }
-  .btn-ghost:hover { background: #dce8f5; }
+  .btn-ghost:hover:not(:disabled) { background: #dce8f5; }
+  .btn-ghost:disabled { background: #f0f3f7; color: #a8b4c0; border-color: #dde4ec; cursor: not-allowed; opacity: 1; }
   input:focus { outline: 2px solid #f0871f; border-color: #f0871f !important; }
   #login-screen { transition: opacity .25s; }
   .date-wrap {
@@ -247,9 +249,9 @@
             </div>
             <div style="flex:0 0 160px;">
               <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">สถานะการตรวจสอบ</div>
-              <select id="q-status" style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1c2e44;background:#fff;outline:none;">
+              <select id="q-status" onchange="updateClaimButtons()" style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1c2e44;background:#fff;outline:none;">
                 <option value="">ทั้งหมด</option>
-                <option value="ready">พร้อมส่ง</option>
+                <option value="ready">ยืนยันพร้อมส่ง</option>
                 <option value="review">ยังไม่ยืนยัน</option>
               </select>
             </div>
@@ -279,17 +281,17 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
               Export Excel
             </button>
-            <button class="btn-ghost" style="border-color:#2563a8;color:#2563a8;" onclick="openConfirmScreen()">ยืนยันส่งพร้อม</button>
-            <button class="btn-ghost" style="border-color:#1a7a4a;color:#1a7a4a;" onclick="">ส่งเคลม HD</button>
-            <button class="btn-orange" onclick="">ส่งเคลม DMIS</button>
+            <button class="btn-ghost" style="border-color:#2563a8;color:#2563a8;" onclick="openConfirmScreen()">ยืนยันพร้อมส่ง</button>
+            <button id="btn-send-hd" class="btn-ghost" style="border-color:#1a7a4a;color:#1a7a4a;" onclick="" disabled>ส่งเคลม HD</button>
+            <button id="btn-send-dmis" class="btn-orange" onclick="" disabled>ส่งเคลม DMIS</button>
           </div>
         </div>
         <!-- Table -->
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
           <div style="overflow-x:auto;">
-            <div style="min-width:1900px;">
-              <div style="display:grid;grid-template-columns:135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 110px 90px 78px;gap:6px;padding:11px 18px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:11.5px;font-weight:700;color:#6b7a8d;letter-spacing:.3px;white-space:nowrap;">
-                <div>เลขบัตร</div><div>HN</div><div>ชื่อ-สกุล</div><div>อายุ</div><div>สิทธิ</div><div>วันที่ฟอก</div><div>เวลาเริ่ม</div><div>เวลาสิ้นสุด</div><div>น.ก่อน(kg)</div><div>น.หลัง(kg)</div><div>BP ก่อน</div><div>BP หลัง</div><div>UF(L)</div><div>URR</div><div>KT/V</div><div>ยอดเบิก</div><div>สถานะ</div><div>ยืนยัน</div><div style="text-align:right;">จัดการ</div>
+            <div style="min-width:1820px;">
+              <div style="display:grid;grid-template-columns:135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 140px 78px;gap:6px;padding:11px 18px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:11.5px;font-weight:700;color:#6b7a8d;letter-spacing:.3px;white-space:nowrap;">
+                <div>เลขบัตร</div><div>HN</div><div>ชื่อ-สกุล</div><div>อายุ</div><div>สิทธิ</div><div>วันที่ฟอก</div><div>เวลาเริ่ม</div><div>เวลาสิ้นสุด</div><div>น.ก่อน(kg)</div><div>น.หลัง(kg)</div><div>BP ก่อน</div><div>BP หลัง</div><div>UF(L)</div><div>URR</div><div>KT/V</div><div>ยอดเบิก</div><div>สถานะ</div><div style="text-align:right;">จัดการ</div>
               </div>
               <div id="queue-table"><div style="padding:40px;text-align:center;color:#8b99a9;font-size:13.5px;">กรุณาเลือกวันที่และกดค้นหา</div></div>
             </div>
@@ -890,12 +892,32 @@ async function searchQueue() {
 
     // กรองตามสถานะ
     let display = queueRows;
-    if (stFilter) display = queueRows.filter(r => computeQueueStatus(r) === stFilter);
+    if (stFilter === 'ready')  display = queueRows.filter(r =>  confirmedVns.has(r.vn));
+    else if (stFilter === 'review') display = queueRows.filter(r => !confirmedVns.has(r.vn));
 
     if (sum) sum.textContent = `พบ ${display.length} รายการ (ทั้งหมด ${queueRows.length} รายการ)`;
     renderQueue(display);
   } catch(e) {
     if (tbl) tbl.innerHTML = `<div style="padding:32px;text-align:center;color:#cf3b3b;font-size:13.5px;">เกิดข้อผิดพลาด: ${e.message}</div>`;
+  }
+}
+
+function updateClaimButtons() {
+  const isReady = document.getElementById('q-status')?.value === 'ready';
+  const btnHD   = document.getElementById('btn-send-hd');
+  const btnDMIS = document.getElementById('btn-send-dmis');
+  if (btnHD) {
+    btnHD.disabled = !isReady;
+    btnHD.style.opacity    = isReady ? '1'       : '0.45';
+    btnHD.style.cursor     = isReady ? 'pointer'  : 'not-allowed';
+    btnHD.style.borderColor= isReady ? '#1a7a4a'  : '#c4cdd8';
+    btnHD.style.color      = isReady ? '#1a7a4a'  : '#8b99a9';
+  }
+  if (btnDMIS) {
+    btnDMIS.disabled = !isReady;
+    btnDMIS.style.opacity = isReady ? '1'          : '0.45';
+    btnDMIS.style.cursor  = isReady ? 'pointer'     : 'not-allowed';
+    btnDMIS.style.background = isReady ? ''         : '#d0d8e2';
   }
 }
 
@@ -935,21 +957,20 @@ function renderQueue(rows) {
     return;
   }
   const stMap = {
-    ready:  {label:'พร้อมส่ง',     color:'#1a8a5a',bg:'#e6f4ec'},
-    review: {label:'ยังไม่ยืนยัน', color:'#c9821a',bg:'#fbf1de'},
+    confirmed: {label:'✓ ยืนยันพร้อมส่ง', color:'#0d5c3a', bg:'#c2e8d4'},
+    ready:     {label:'พร้อมส่ง',          color:'#1a8a5a', bg:'#e6f4ec'},
+    review:    {label:'ยังไม่ยืนยัน',     color:'#c9821a', bg:'#fbf1de'},
   };
   const fmtN = v => (v != null && v !== '') ? v : '-';
   const fmtBP = (s,d) => (s||d) ? `${s||'?'}/${d||'?'}` : '-';
   const fmtNum = (v,dec=1) => (v != null && v !== '') ? parseFloat(v).toFixed(dec) : '-';
-  const COLS = '135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 110px 90px 78px';
+  const COLS = '135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 140px 78px';
   tbl.innerHTML = rows.map((r,i) => {
-    const st = stMap[computeQueueStatus(r)] || stMap.review;
-    const claim = r.hd_claim ? `฿${parseFloat(r.hd_claim).toLocaleString()}` : '-';
-    const rowBg = i%2===1 ? 'background:#fafbfc;' : '';
     const isConfirmed = confirmedVns.has(r.vn);
-    const confirmCell = isConfirmed
-      ? `<span style="background:#e6f4ec;color:#1a8a5a;font-size:12px;font-weight:700;border-radius:6px;padding:3px 10px;display:inline-block;">✓ ยืนยัน</span>`
-      : `<span style="color:#cdd6e4;font-size:12px;">—</span>`;
+    const stKey = isConfirmed ? 'confirmed' : 'review';
+    const st = stMap[stKey] || stMap.review;
+    const claim = r.hd_claim ? `฿${parseFloat(r.hd_claim).toLocaleString()}` : '-';
+    const rowBg = isConfirmed ? 'background:#f4fbf7;' : (i%2===1 ? 'background:#fafbfc;' : '');
     return `<div style="display:grid;grid-template-columns:${COLS};gap:6px;padding:11px 18px;border-bottom:1px solid #eef1f5;align-items:center;font-size:12.5px;${rowBg}white-space:nowrap;">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.cid||''}">${fmtN(r.cid)}</div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#33465c;">${fmtN(r.hn)}</div>
@@ -967,8 +988,7 @@ function renderQueue(rows) {
       <div style="text-align:right;color:#55677d;">${fmtNum(r.urr)}</div>
       <div style="text-align:right;color:#55677d;">${fmtNum(r.ktv,2)}</div>
       <div style="font-weight:600;color:#0d2742;">${claim}</div>
-      <div><span style="background:${st.bg};color:${st.color};font-size:11px;font-weight:600;border-radius:6px;padding:3px 9px;display:inline-block;">${st.label}</span></div>
-      <div>${confirmCell}</div>
+      <div><span style="background:${st.bg};color:${st.color};font-size:11px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span></div>
       <div style="text-align:right;"><button class="btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="navigate('detail')">ตรวจสอบ</button></div>
     </div>`;
   }).join('');
@@ -1520,7 +1540,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       <div id="confirm-missing-banner" style="display:none;flex:0 0 auto;"></div>
 
       <!-- 6-group scrollable body -->
-      <div id="confirm-detail-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;"></div>
+      <div id="confirm-detail-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:block;"></div>
 
       <!-- Footer: note + confirm button -->
       <div id="confirm-detail-footer" style="background:#fff;border-top:1px solid #e4e9f0;padding:14px 20px;flex:0 0 auto;"></div>
@@ -1766,22 +1786,22 @@ function renderConfirmDetail(idx) {
   // 6-group cards: 2-column field grid
   document.getElementById('confirm-detail-body').innerHTML = CONFIRM_GROUPS.map(g => {
     const filledCount = g.rows.filter(f => { const v=r[f.key]; return v!=null&&v!==''; }).length;
-    return `<div style="background:#fff;border:1px solid #e4e9f0;border-radius:12px;overflow:hidden;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-left:5px solid ${g.accent};background:${g.headBg};">
+    return `<div style="background:#fff;border:1px solid #e4e9f0;border-radius:12px;overflow:hidden;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-left:5px solid ${g.accent};background:${g.headBg};">
         <div style="font-size:14px;font-weight:700;color:#1c2e44;">${g.title}</div>
         <div style="font-size:11.5px;color:#8b99a9;font-family:'IBM Plex Mono',monospace;">${filledCount}/${g.rows.length}</div>
       </div>
-      <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;">
+      <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;">
         ${g.rows.map(f => {
           const display = fmtConfirmVal(f, r);
           const hasVal = display != null;
           const isMissing = !hasVal && f.required;
-          return `<div>
-            <div style="font-size:10.5px;color:#9aa7b6;font-weight:600;letter-spacing:.4px;margin-bottom:4px;text-transform:uppercase;">${f.label}${f.required?'<span style="color:#cf3b3b;"> *</span>':''}</div>
-            <div style="font-size:14px;font-weight:${hasVal?'600':'400'};color:${isMissing?'#cf3b3b':hasVal?'#1c2e44':'#9aa7b6'};">
+          return `<div style="min-height:52px;border-bottom:1px solid #f3f5f8;padding-bottom:10px;">
+            <div style="font-size:11px;color:#9aa7b6;font-weight:700;letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;">${f.label}${f.required?'<span style="color:#cf3b3b;"> *</span>':''}</div>
+            <div style="font-size:14.5px;font-weight:${hasVal?'600':'400'};color:${isMissing?'#cf3b3b':hasVal?'#1c2e44':'#aab4be'};line-height:1.4;">
               ${isMissing
-                ? `<span style="background:#fef2f2;border:1px solid #f9c7c7;border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;">ขาดข้อมูล</span>`
-                : (display || '<span style="color:#bbc5d0;font-size:13px;font-weight:400;">— ไม่มีรายการ</span>')}
+                ? `<span style="background:#fef2f2;border:1px solid #f9c7c7;border-radius:5px;padding:3px 10px;font-size:12.5px;font-weight:700;">ขาดข้อมูล</span>`
+                : (display || '<span style="color:#c5cdd7;font-size:13px;font-weight:400;">— ไม่มีรายการ</span>')}
             </div>
           </div>`;
         }).join('')}
@@ -1796,22 +1816,20 @@ function renderConfirmDetail(idx) {
       <div style="font-size:12.5px;color:#1a8a5a;font-weight:600;">✓ ยืนยันพร้อมส่งเบิกเรียบร้อยแล้ว</div>
       <button onclick="unconfirmRow(${idx})" style="background:#fef2f2;color:#cf3b3b;border:1px solid #f9c7c7;border-radius:9px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">ยกเลิกการยืนยัน</button>
     </div>`;
-  } else if (pct === 100) {
-    footer.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-      <div style="font-size:12px;color:#8b99a9;flex:1;">เมื่อยืนยัน ระบบจะติ๊ก "ยืนยันพร้อมส่ง" ในทะเบียนรับบริการฟอกเลือดโดยอัตโนมัติ</div>
-      <button onclick="confirmCurrentRow()" style="background:#f0871f;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">ยืนยันพร้อมส่ง</button>
-    </div>`;
   } else {
+    const hint = pct === 100
+      ? `<div style="font-size:12px;color:#8b99a9;flex:1;">เมื่อยืนยัน ระบบจะติ๊ก "ยืนยันพร้อมส่ง" ในทะเบียนรับบริการฟอกเลือดโดยอัตโนมัติ</div>`
+      : `<div style="font-size:12px;color:#d98324;flex:1;">ข้อมูลไม่ครบถ้วน (${pct}%) — สามารถยืนยันได้แต่อาจส่งเบิกไม่สำเร็จ</div>`;
     footer.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-      <div style="font-size:12px;color:#cf3b3b;flex:1;">กรุณากรอกข้อมูลที่ขาดให้ครบถ้วนก่อนยืนยัน</div>
-      <button disabled style="background:#e4e9f0;color:#8b99a9;border:none;border-radius:10px;padding:12px 28px;font-family:inherit;font-size:14px;font-weight:600;cursor:not-allowed;white-space:nowrap;">ยืนยันพร้อมส่ง</button>
+      ${hint}
+      <button onclick="confirmCurrentRow()" style="background:#f0871f;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">ยืนยันพร้อมส่ง</button>
     </div>`;
   }
 }
 
 function confirmCurrentRow() {
   const r = queueRows[confirmIndex];
-  if (!r || confirmCompleteness(r).pct < 100) return;
+  if (!r) return;
   confirmStatuses[r.vn] = 'confirmed';
   confirmedVns.add(r.vn);
   renderConfirmLeft();
