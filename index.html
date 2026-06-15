@@ -1,1360 +1,1849 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dialysis Smart Claim System</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Sarabun', 'system-ui', 'sans-serif'],
-        display: ['Prompt', 'sans-serif'],
-      },
-      colors: {
-        brand: {
-          50:'#eef7ff',100:'#d9ecff',200:'#bcdfff',300:'#8eccff',400:'#59b1ff',
-          500:'#3492fb',600:'#1d72ef',700:'#185cdc',800:'#1a4cb2',900:'#1c428c'
-        },
-        teal2: { 400:'#22c5b9', 500:'#0eaba0', 600:'#0a8e84' }
-      }
-    }
-  }
-}
-</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto Claim DMIS &amp; HD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  body { font-family:'Sarabun',sans-serif; background: linear-gradient(135deg,#eef7ff 0%,#f5fbff 50%,#eafffb 100%); min-height: 100vh; }
-  .font-display { font-family:'Prompt',sans-serif; }
-  .font-serif { font-family: Georgia, 'Times New Roman', serif; }
-  .glass { backdrop-filter: blur(12px); background: rgba(255,255,255,0.78); }
-  .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  table.reg-table thead th { position: sticky; top: 0; z-index: 5; }
-  table.reg-table tbody tr:hover { background: #f0f9ff; }
-  .badge { display:inline-flex; align-items:center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,0.6); animation: pulse 1.6s infinite; }
-  .pulse-dot.off { background: #94a3b8; animation: none; box-shadow: none; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6);} 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0);} 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0);} }
-  .stat-card { transition: transform .2s, box-shadow .2s; }
-  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(29,114,239,0.18); }
-  .skeleton { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
-  @keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
-  .btn-primary { background: linear-gradient(135deg,#1d72ef,#0eaba0); color: white; }
-  .btn-primary:hover { background: linear-gradient(135deg,#185cdc,#0a8e84); }
-  .btn-orange { background: linear-gradient(135deg,#f97316,#fb923c); color: white; }
-  .btn-orange:hover { background: linear-gradient(135deg,#ea580c,#f97316); }
-  .table-shadow { box-shadow: 0 1px 0 0 #e2e8f0, 0 8px 24px -12px rgba(15,23,42,0.12); }
-  .filter-chip { transition: all .2s; }
-  .filter-chip.active { background: #1d72ef; color: white; border-color: #1d72ef; }
-  .preset-btn { background: white; border-color: #cbd5e1; color: #475569; }
-  .preset-btn:hover { background: linear-gradient(135deg,#1d72ef,#0eaba0); border-color: transparent; color: white; transform: translateY(-1px); box-shadow: 0 4px 12px -4px rgba(29,114,239,0.35); }
-  .preset-btn.active { background: linear-gradient(135deg,#1d72ef,#0eaba0); border-color: transparent; color: white; box-shadow: 0 2px 8px -2px rgba(29,114,239,0.3); }
-  .grad-bar-1 { background: linear-gradient(135deg,#3b82f6,#06b6d4); }
-  .grad-bar-2 { background: linear-gradient(135deg,#10b981,#22d3ee); }
-  .grad-bar-3 { background: linear-gradient(135deg,#f59e0b,#ef4444); }
-  .grad-bar-4 { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
-  .clinic-dropdown-item { padding: 8px 12px; cursor: pointer; }
-  .clinic-dropdown-item:hover { background: #f0f9ff; }
-  .clinic-dropdown-item.active { background: #e0f2fe; }
-  .flatpickr-calendar { border-radius: 16px; box-shadow: 0 20px 40px -12px rgba(15,23,42,0.25); border: 1px solid #e2e8f0; font-family: 'Sarabun', sans-serif; }
-  .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: #1d72ef; border-color: #1d72ef; }
-  .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover { background: #185cdc; border-color: #185cdc; }
-  .flatpickr-day.inRange { background: #d9ecff; border-color: #d9ecff; box-shadow: -5px 0 0 #d9ecff, 5px 0 0 #d9ecff; }
-  .flatpickr-day.today { border-color: #0eaba0; }
-  .flatpickr-months .flatpickr-month { height: 42px; }
-  .flatpickr-current-month { font-size: 16px; font-family: 'Prompt', sans-serif; }
-  .flatpickr-current-month .numInputWrapper { width: 6ch; }
-  @media print {
-    body { background: white; }
-    .no-print { display: none !important; }
-    table.reg-table thead th { position: static; }
+  :root {
+    --sidebar-bg: #0d2742;
+    --sidebar-border: rgba(255,255,255,.08);
+    --sidebar-text: #aebccd;
+    --sidebar-text-dim: #62788f;
+    --sidebar-user-bg: #1d3e60;
+    --accent: #f0871f;
+    --accent-dim: rgba(240,135,31,.16);
+    --page-bg: #e9edf2;
+    --scrollbar-thumb: #c4ced9;
+    --scrollbar-border: #e9edf2;
+    --topbar-btn-bg: #0d2742;
+    --topbar-btn-hover: #16395f;
   }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--page-bg); color: #15263b; -webkit-font-smoothing: antialiased; transition: background .3s; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; border: 2px solid var(--scrollbar-border); }
+  #app-sidebar { background: var(--sidebar-bg) !important; }
+  #app-sidebar .nav-btn { color: var(--sidebar-text); }
+  #app-sidebar .nav-btn.active { background: var(--accent-dim) !important; box-shadow: inset 3px 0 0 var(--accent) !important; }
+  #sync-btn { background: var(--topbar-btn-bg) !important; }
+  #sync-btn:hover { background: var(--topbar-btn-hover) !important; }
+  .accent-dot { background: var(--accent) !important; }
+  .accent-badge { background: var(--accent) !important; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .nav-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 11px 13px; border: none; border-radius: 9px; cursor: pointer;
+    font-family: inherit; font-size: 14px; text-align: left; margin-bottom: 3px;
+    background: transparent; color: #aebccd; transition: background .15s;
+  }
+  .nav-btn:hover:not(.active) { background: rgba(255,255,255,.06); }
+  .nav-btn.active {
+    background: rgba(240,135,31,.16); color: #ffffff;
+    box-shadow: inset 3px 0 0 #f0871f; font-weight: 600;
+  }
+  .btn-primary {
+    background: #0d2742; color: #fff; border: none; border-radius: 9px;
+    padding: 9px 16px; font-family: inherit; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #16395f; }
+  .btn-orange {
+    background: #f0871f; color: #fff; border: none; border-radius: 9px;
+    padding: 9px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-orange:hover { background: #d97518; }
+  .btn-ghost {
+    background: #eef3f8; color: #1d4e89; border: 1px solid #d6e2ee; border-radius: 7px;
+    padding: 6px 13px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-ghost:hover { background: #dce8f5; }
+  input:focus { outline: 2px solid #f0871f; border-color: #f0871f !important; }
+  #login-screen { transition: opacity .25s; }
+  .date-wrap {
+    position: relative; display: inline-flex; align-items: center; gap: 7px;
+    border-bottom: 1.5px solid #cdd6e4; padding: 6px 8px 5px;
+    cursor: pointer; min-width: 118px;
+  }
+  .date-wrap:focus-within { border-bottom-color: #f0871f; }
+  .date-lbl {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    color: #8b99a9; user-select: none; white-space: nowrap;
+  }
+  .date-lbl.has-value { color: #1c2e44; }
 </style>
 </head>
-<body class="text-slate-800">
+<body>
 
-<!-- Login Overlay -->
-<div id="loginOverlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gradient-to-br from-brand-700 via-teal2-500 to-brand-900">
-  <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px), radial-gradient(circle at 80% 70%, white 1px, transparent 1px); background-size: 40px 40px;"></div>
-  <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
-    <div class="flex items-center justify-center mb-5">
-      <div class="w-16 h-16 rounded-2xl shadow-lg overflow-hidden">
-        <svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="bgGrad" x1="0" y1="0" x2="100" y2="100">
-              <stop offset="0%" stop-color="#e0f2fe"/>
-              <stop offset="50%" stop-color="#f0f9ff"/>
-              <stop offset="100%" stop-color="#dbeafe"/>
-            </linearGradient>
-            <linearGradient id="kidneyGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#fda4af"/>
-              <stop offset="40%" stop-color="#f43f5e"/>
-              <stop offset="100%" stop-color="#be123c"/>
-            </linearGradient>
-            <linearGradient id="kidneyShine" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="white" stop-opacity="0"/>
-            </linearGradient>
-            <filter id="blur1" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="1.5"/>
-            </filter>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0.5" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.15"/>
-            </filter>
-          </defs>
-          <rect width="100" height="100" fill="url(#bgGrad)" rx="16"/>
-          <!-- Kidney -->
-          <g transform="translate(8,18)" filter="url(#shadow)">
-            <path d="M28,8 C38,2 48,8 48,22 C48,34 40,42 32,44 C28,45 28,48 28,52 L28,58 C28,60 26,62 24,62 C22,62 20,60 20,58 L20,52 C20,48 20,45 16,44 C8,42 0,34 0,22 C0,8 10,2 20,8 C22,9 24,10 24,12 C24,10 26,9 28,8Z" fill="url(#kidneyGrad)"/>
-            <ellipse cx="18" cy="22" rx="6" ry="10" fill="url(#kidneyShine)"/>
-            <!-- Artery (red) -->
-            <path d="M24,12 Q30,5 38,8" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <circle cx="38" cy="8" r="2.5" fill="#ef4444"/>
-            <!-- Vein (blue) -->
-            <path d="M22,14 Q28,18 36,16" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <circle cx="36" cy="16" r="2" fill="#3b82f6"/>
-            <!-- Ureter -->
-            <path d="M24,62 Q24,72 30,78" stroke="#fcd34d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          </g>
-          <!-- Document Card -->
-          <g transform="translate(54,14)" filter="url(#shadow)">
-            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.55)" stroke="rgba(217,170,90,0.6)" stroke-width="1.2"/>
-            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.25)" filter="url(#blur1)"/>
-            <!-- Currency lines -->
-            <circle cx="8" cy="10" r="3" fill="#f59e0b" opacity="0.9"/>
-            <text x="8" y="11.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">¥</text>
-            <line x1="14" y1="9" x2="28" y2="9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="12" x2="24" y2="12" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <circle cx="8" cy="20" r="3" fill="#10b981" opacity="0.9"/>
-            <text x="8" y="21.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">฿</text>
-            <line x1="14" y1="19" x2="28" y2="19" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="22" x2="24" y2="22" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <circle cx="8" cy="30" r="3" fill="#6366f1" opacity="0.9"/>
-            <text x="8" y="31.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">N</text>
-            <line x1="14" y1="29" x2="28" y2="29" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="32" x2="24" y2="32" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <!-- Green arrow button -->
-            <rect x="20" y="37" width="10" height="5" rx="2.5" fill="#22c55e"/>
-            <path d="M23,39.5 L26,39.5 M25,38.5 L26,39.5 L25,40.5" stroke="white" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <!-- Coins & Banknotes at bottom -->
-          <g transform="translate(20,72)" filter="url(#shadow)">
-            <!-- Banknotes stack -->
-            <rect x="0" y="2" width="28" height="10" rx="2" fill="#10b981" transform="rotate(-6,14,7)"/>
-            <rect x="0" y="2" width="28" height="10" rx="2" fill="#059669" transform="rotate(-3,14,7)"/>
-            <rect x="0" y="0" width="28" height="10" rx="2" fill="#34d399"/>
-            <rect x="8" y="3" width="12" height="4" rx="1" fill="rgba(255,255,255,0.3)"/>
-            <!-- Coins stack -->
-            <ellipse cx="44" cy="14" rx="8" ry="3" fill="#ca8a04"/>
-            <rect x="36" y="8" width="16" height="6" rx="1" fill="#eab308"/>
-            <ellipse cx="44" cy="8" rx="8" ry="3" fill="#facc15"/>
-            <text x="44" y="11.5" font-size="5" fill="#a16207" text-anchor="middle" font-weight="bold">฿</text>
-          </g>
-        </svg>
+<!-- ===== LOGIN ===== -->
+<div id="login-screen" style="min-height:100vh;background:#0d2742;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:18px;padding:40px 44px;width:440px;box-shadow:0 12px 48px rgba(0,0,0,.28);">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px;">
+      <!-- icon only: crop left 42% of 1408×768 image -->
+      <div style="width:66px;height:76px;overflow:hidden;flex:0 0 auto;">
+        <img src="logo.gif" alt="" style="height:76px;width:auto;max-width:none;display:block;">
+      </div>
+      <div style="text-align:center;line-height:1.2;">
+        <div style="font-size:18px;font-weight:800;color:#1d3a6e;letter-spacing:.5px;">DIALYSIS AUTO CLAIM</div>
+        <div style="font-size:13px;font-weight:700;color:#0e7a9e;letter-spacing:2.5px;margin-top:2px;">DMIS &amp; HD</div>
       </div>
     </div>
-    <h1 class="font-display text-2xl font-bold text-center bg-gradient-to-r from-brand-700 to-teal2-600 bg-clip-text text-transparent">Dialysis Smart Claim</h1>
-    <p class="text-center text-sm text-slate-500 mb-6">ทะเบียนส่งเคลมเบิกฟอกเลือด · HOSxP</p>
 
-    <label class="block text-xs font-semibold text-slate-600 mb-2">BMS Session ID</label>
-    <input id="loginSessionId" type="text" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm font-mono mb-2">
-    <p class="text-[11px] text-slate-400 mb-4">หาได้จาก URL ของ HOSxP/BMS Dashboard (?bms-session-id=...) หรือสอบถามผู้ดูแลระบบ</p>
+    <div style="font-size:15px;font-weight:600;color:#1c2e44;margin-bottom:5px;">BMS Session ID</div>
+    <div style="font-size:13px;color:#8b99a9;margin-bottom:14px;">กรอก Session ID จาก HOSxP / BMS Dashboard</div>
 
-    <button id="btnLogin" class="btn-primary w-full py-3 rounded-xl font-semibold shadow hover:shadow-lg flex items-center justify-center gap-2">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    <!-- input + show/hide toggle -->
+    <div style="position:relative;margin-bottom:14px;">
+      <input id="session-input" type="password" placeholder="bms-session-id..."
+        style="width:100%;padding:11px 42px 11px 14px;border:1.5px solid #d6deea;border-radius:9px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:#1c2e44;"
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <button onclick="toggleShowSession()" id="show-toggle"
+        title="แสดง/ซ่อน Session ID"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8b99a9;padding:4px;font-size:17px;line-height:1;">
+        👁
+      </button>
+    </div>
+
+    <!-- error box -->
+    <div id="login-error" style="display:none;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.5;"></div>
+
+    <!-- submit -->
+    <button id="login-btn" onclick="doLogin()" class="btn-primary" style="width:100%;padding:12px;font-size:15px;border-radius:9px;">
       เข้าสู่ระบบ
     </button>
 
-    <div id="loginError" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs"></div>
-
-    <div class="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-400 text-center">
-      ต้องเข้าสู่ระบบใหม่ทุกครั้งที่เปิดหน้านี้ · ระบบไม่บันทึก Session ID
+    <!-- help accordion -->
+    <div style="margin-top:18px;">
+      <button onclick="toggleHelp()" style="background:none;border:none;font-family:inherit;font-size:13px;color:#8b99a9;cursor:pointer;padding:0;display:flex;align-items:center;gap:6px;width:100%;justify-content:center;">
+        <span id="help-arrow" style="transition:transform .2s;">▸</span> วิธีหา BMS Session ID
+      </button>
+      <div id="help-box" style="display:none;margin-top:12px;background:#f5f8fb;border-radius:10px;padding:14px 16px;font-size:13px;color:#54657a;line-height:1.7;">
+        <b style="color:#1c2e44;">วิธีที่ 1</b> — เปิด HOSxP / BMS Dashboard ในเบราว์เซอร์ที่ login แล้ว<br>
+        ดู URL: <span style="font-family:'IBM Plex Mono',monospace;background:#e9edf2;padding:1px 6px;border-radius:4px;">?bms-session-id=...</span><br><br>
+        <b style="color:#1c2e44;">วิธีที่ 2</b> — เปิด DevTools (F12) → Application → Cookies<br>
+        คัดลอกค่า <span style="font-family:'IBM Plex Mono',monospace;background:#e9edf2;padding:1px 6px;border-radius:4px;">bms-session-id</span><br><br>
+        <span style="font-size:12px;color:#9fb3c8;">Session มีอายุประมาณ 10 ชั่วโมง</span>
+      </div>
     </div>
+
+    <div style="margin-top:14px;font-size:12px;color:#c4ced9;text-align:center;">ระบบคีย์เบิกอัตโนมัติ · หน่วยไตเทียม</div>
   </div>
 </div>
 
-<!-- Top Bar -->
-<header class="sticky top-0 z-30 glass border-b border-white/40 shadow-sm no-print">
-  <div class="max-w-[1600px] mx-auto px-6 py-3 flex items-center gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-xl shadow-md overflow-hidden">
-        <svg viewBox="0 0 100 100" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="bgGrad2" x1="0" y1="0" x2="100" y2="100">
-              <stop offset="0%" stop-color="#e0f2fe"/>
-              <stop offset="50%" stop-color="#f0f9ff"/>
-              <stop offset="100%" stop-color="#dbeafe"/>
-            </linearGradient>
-            <linearGradient id="kidneyGrad2" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#fda4af"/>
-              <stop offset="40%" stop-color="#f43f5e"/>
-              <stop offset="100%" stop-color="#be123c"/>
-            </linearGradient>
-            <linearGradient id="kidneyShine2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="white" stop-opacity="0"/>
-            </linearGradient>
-            <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0.5" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.15"/>
-            </filter>
-          </defs>
-          <rect width="100" height="100" fill="url(#bgGrad2)" rx="16"/>
-          <g transform="translate(8,18)" filter="url(#shadow2)">
-            <path d="M28,8 C38,2 48,8 48,22 C48,34 40,42 32,44 C28,45 28,48 28,52 L28,58 C28,60 26,62 24,62 C22,62 20,60 20,58 L20,52 C20,48 20,45 16,44 C8,42 0,34 0,22 C0,8 10,2 20,8 C22,9 24,10 24,12 C24,10 26,9 28,8Z" fill="url(#kidneyGrad2)"/>
-            <ellipse cx="18" cy="22" rx="6" ry="10" fill="url(#kidneyShine2)"/>
-            <path d="M24,12 Q30,5 38,8" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <circle cx="38" cy="8" r="2.5" fill="#ef4444"/>
-            <path d="M22,14 Q28,18 36,16" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <circle cx="36" cy="16" r="2" fill="#3b82f6"/>
-            <path d="M24,62 Q24,72 30,78" stroke="#fcd34d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          </g>
-          <g transform="translate(54,14)" filter="url(#shadow2)">
-            <rect x="0" y="0" width="32" height="44" rx="4" fill="rgba(255,255,255,0.55)" stroke="rgba(217,170,90,0.6)" stroke-width="1.2"/>
-            <circle cx="8" cy="10" r="3" fill="#f59e0b" opacity="0.9"/>
-            <text x="8" y="11.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">¥</text>
-            <line x1="14" y1="9" x2="28" y2="9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="12" x2="24" y2="12" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <circle cx="8" cy="20" r="3" fill="#10b981" opacity="0.9"/>
-            <text x="8" y="21.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">฿</text>
-            <line x1="14" y1="19" x2="28" y2="19" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="22" x2="24" y2="22" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <circle cx="8" cy="30" r="3" fill="#6366f1" opacity="0.9"/>
-            <text x="8" y="31.5" font-size="4" fill="white" text-anchor="middle" font-weight="bold">N</text>
-            <line x1="14" y1="29" x2="28" y2="29" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="14" y1="32" x2="24" y2="32" stroke="#cbd5e1" stroke-width="1" stroke-linecap="round"/>
-            <rect x="20" y="37" width="10" height="5" rx="2.5" fill="#22c55e"/>
-            <path d="M23,39.5 L26,39.5 M25,38.5 L26,39.5 L25,40.5" stroke="white" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <g transform="translate(20,72)" filter="url(#shadow2)">
-            <rect x="0" y="2" width="28" height="10" rx="2" fill="#10b981" transform="rotate(-6,14,7)"/>
-            <rect x="0" y="2" width="28" height="10" rx="2" fill="#059669" transform="rotate(-3,14,7)"/>
-            <rect x="0" y="0" width="28" height="10" rx="2" fill="#34d399"/>
-            <rect x="8" y="3" width="12" height="4" rx="1" fill="rgba(255,255,255,0.3)"/>
-            <ellipse cx="44" cy="14" rx="8" ry="3" fill="#ca8a04"/>
-            <rect x="36" y="8" width="16" height="6" rx="1" fill="#eab308"/>
-            <ellipse cx="44" cy="8" rx="8" ry="3" fill="#facc15"/>
-            <text x="44" y="11.5" font-size="5" fill="#a16207" text-anchor="middle" font-weight="bold">฿</text>
-          </g>
-        </svg>
+<!-- ===== MAIN APP ===== -->
+<div id="app" style="display:none;min-height:100vh;width:100%;background:#e9edf2;font-family:'Sarabun',sans-serif;flex-direction:row;">
+
+  <!-- SIDEBAR -->
+  <aside id="app-sidebar" style="width:256px;flex:0 0 256px;background:#0d2742;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:20;">
+    <div style="padding:14px 18px 13px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <!-- icon only: crop left 42% of 1408×768 image -->
+        <div style="width:85px;height:110px;overflow:hidden;flex:0 0 auto;">
+          <img id="sidebar-logo-img" src="logo.gif" alt="" style="height:110px;width:auto;max-width:none;display:block;transition:filter .3s;">
+        </div>
+        <div style="line-height:1.25;min-width:0;">
+          <div style="font-size:16px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:.2px;">Dialysis Auto Claim</div>
+          <div style="font-size:13px;font-weight:600;color:var(--sidebar-text);letter-spacing:2px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;">DMIS &amp; HD</div>
+        </div>
       </div>
+    </div>
+    <nav style="padding:14px 12px;flex:1;">
+      <div style="font-size:11px;color:#62788f;letter-spacing:1px;padding:6px 10px 8px;font-weight:600;text-transform:uppercase;">เมนูหลัก</div>
+      <div id="nav-menu"></div>
+    </nav>
+    <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#9fb3c8;margin-bottom:9px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.18);flex:0 0 auto;"></span>
+        เชื่อมต่อ HIS: ออนไลน์
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-top:4px;">
+        <div style="width:34px;height:34px;border-radius:50%;background:#1d3e60;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#cfe0f0;flex:0 0 auto;" id="user-avatar">รส</div>
+        <div style="line-height:1.25;min-width:0;flex:1;">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="user-name">Session ใช้งานอยู่</div>
+          <div style="font-size:11px;color:#7d93ab;">หน่วยไตเทียม รพ.</div>
+        </div>
+        <button onclick="doLogout()" title="ออกจากระบบ"
+          style="background:rgba(255,255,255,.08);border:none;color:#9fb3c8;border-radius:7px;padding:6px 8px;cursor:pointer;font-size:14px;flex:0 0 auto;"
+          onmouseover="this.style.background='rgba(255,255,255,.16)'"
+          onmouseout="this.style.background='rgba(255,255,255,.08)'">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div style="margin-left:256px;flex:1;display:flex;flex-direction:column;min-width:0;min-height:100vh;">
+
+    <!-- TOPBAR -->
+    <header style="height:64px;background:#fff;border-bottom:1px solid #dde4ec;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10;">
       <div>
-        <h1 class="font-display text-lg font-bold leading-tight bg-gradient-to-r from-brand-700 to-teal2-600 bg-clip-text text-transparent">ทะเบียนส่งเคลมเบิกฟอกเลือด</h1>
-        <p class="text-xs text-slate-500">Dialysis Smart Claim System</p>
+        <div id="page-title" style="font-size:19px;font-weight:700;color:#0d2742;line-height:1.1;"></div>
+        <div id="page-sub" style="font-size:12.5px;color:#7587a0;"></div>
       </div>
-    </div>
-    <div class="hidden md:flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
-      <span id="statusDot" class="pulse-dot"></span>
-      <span id="connStatus">Online</span>
-    </div>
-    <div class="flex-1"></div>
-    <div class="hidden lg:flex items-center gap-3 text-sm">
-      <div class="text-right">
-        <div class="font-semibold text-slate-700" id="userName">—</div>
-        <div class="text-xs text-slate-500" id="userLocation">—</div>
+      <div style="display:flex;align-items:center;gap:18px;">
+        <div id="current-time" style="font-size:13px;color:#56697f;font-family:'IBM Plex Mono',monospace;"></div>
+        <button id="sync-btn" onclick="doSync(this)" class="btn-primary" style="display:flex;align-items:center;gap:8px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#f0871f;flex:0 0 auto;"></span>
+          ซิงก์จาก HIS
+        </button>
       </div>
-      <div class="w-9 h-9 rounded-full grad-bar-2 flex items-center justify-center text-white font-bold text-sm">
-        <span id="userInitial">·</span>
-      </div>
-      <button id="btnSettings" title="ตั้งค่า" class="w-9 h-9 rounded-full bg-white border border-slate-200 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-600 flex items-center justify-center text-slate-500">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-      <button id="btnLogout" title="ออกจากระบบ" class="w-9 h-9 rounded-full bg-white border border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 flex items-center justify-center text-slate-500">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
-    </div>
-  </div>
-</header>
+    </header>
 
-<main class="max-w-[1600px] mx-auto px-6 py-6">
+    <!-- SCREENS -->
+    <main style="flex:1;padding:26px 28px 40px;overflow-x:hidden;">
 
-  <!-- Stats Cards -->
-  <section class="mb-6">
-    <div class="mb-4">
-      <h2 class="font-display text-xl font-bold text-slate-800">ภาพรวม <span class="text-brand-600">วันนี้</span></h2>
-      <p class="text-xs text-slate-400 mt-1">อัปเดตล่าสุด: <span id="statsLastUpdated">—</span></p>
-    </div>
-    <div id="statsSection" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <!-- SESSIONS -->
-      <div class="stat-card bg-white rounded-[20px] p-5 shadow-sm border border-slate-100 relative overflow-hidden">
-        <div class="absolute -bottom-8 -right-8 w-28 h-28 rounded-full opacity-[0.06] bg-blue-500 pointer-events-none"></div>
-        <div class="flex items-center justify-between mb-3 relative z-10">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 17l4-4 4 4 6-8"/></svg>
+      <!-- ============ DASHBOARD ============ -->
+      <div id="screen-dashboard" class="screen">
+        <div id="stat-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;"></div>
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:22px 24px;margin-bottom:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;">ขั้นตอนการคีย์เบิกอัตโนมัติ</div>
+            <div style="font-size:12.5px;color:#1a8a5a;background:#e6f4ec;border:1px solid #c4e6d3;border-radius:20px;padding:4px 13px;font-weight:600;">● ทำงานอัตโนมัติ</div>
           </div>
-          <span class="text-[10px] font-bold tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded">SESSIONS</span>
+          <div id="pipeline" style="display:flex;align-items:stretch;gap:0;"></div>
         </div>
-        <div class="text-3xl font-bold text-slate-800 font-serif relative z-10"><span id="statSessions">0</span><span class="text-sm text-slate-400 font-normal ml-1">ครั้ง</span></div>
-        <div class="text-xs text-slate-500 mt-1 relative z-10">จำนวนครั้งฟอก วันนี้</div>
-        <div class="w-full h-1 bg-blue-100 rounded-full mt-3 relative z-10"><div id="statSessionsBar" class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width:0%"></div></div>
-        <div class="flex items-center justify-between mt-2 relative z-10">
-          <span id="statSessionsTrend" class="text-[11px] text-emerald-600 font-medium">—</span>
-          <span class="text-[10px] text-slate-400">เป้า 4 ครั้ง</span>
-        </div>
-      </div>
-      <!-- PATIENTS -->
-      <div class="stat-card bg-white rounded-[20px] p-5 shadow-sm border border-slate-100 relative overflow-hidden">
-        <div class="absolute -bottom-8 -right-8 w-28 h-28 rounded-full opacity-[0.06] bg-teal-500 pointer-events-none"></div>
-        <div class="flex items-center justify-between mb-3 relative z-10">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:18px;">
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:20px 22px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:16px;">กิจกรรมล่าสุด</div>
+            <div id="activity-list"></div>
           </div>
-          <span class="text-[10px] font-bold tracking-wider text-teal-600 bg-teal-50 px-2 py-1 rounded">PATIENTS</span>
-        </div>
-        <div class="text-3xl font-bold text-slate-800 font-serif relative z-10"><span id="statPatients">0</span><span class="text-sm text-slate-400 font-normal ml-1">คน</span></div>
-        <div class="text-xs text-slate-500 mt-1 relative z-10">ผู้ป่วย (ไม่ซ้ำ) วันนี้</div>
-        <div class="w-full h-1 bg-teal-100 rounded-full mt-3 relative z-10"><div id="statPatientsBar" class="h-full bg-teal-500 rounded-full transition-all duration-500" style="width:0%"></div></div>
-        <div class="flex items-center justify-between mt-2 relative z-10">
-          <span id="statPatientsTrend" class="text-[11px] text-slate-500 font-medium">—</span>
-          <span id="statPatientsTotal" class="text-[10px] text-slate-400">ทั้งหมด 0 คน</span>
-        </div>
-      </div>
-      <!-- UF AVG -->
-      <div class="stat-card bg-white rounded-[20px] p-5 shadow-sm border border-slate-100 relative overflow-hidden">
-        <div class="absolute -bottom-8 -right-8 w-28 h-28 rounded-full opacity-[0.06] bg-orange-500 pointer-events-none"></div>
-        <div class="flex items-center justify-between mb-3 relative z-10">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v6a6 6 0 1 0 12 0V2"/><path d="M4 22h16"/></svg>
-          </div>
-          <span class="text-[10px] font-bold tracking-wider text-orange-600 bg-orange-50 px-2 py-1 rounded">UF AVG</span>
-        </div>
-        <div class="text-3xl font-bold text-slate-800 font-serif relative z-10"><span id="statUfAvg">0.00</span><span class="text-sm text-slate-400 font-normal ml-1">L</span></div>
-        <div class="text-xs text-slate-500 mt-1 relative z-10">เฉลี่ย Ultrafiltration ต่อครั้ง</div>
-        <div class="w-full h-1 bg-orange-100 rounded-full mt-3 relative z-10"><div id="statUfBar" class="h-full bg-orange-500 rounded-full transition-all duration-500" style="width:0%"></div></div>
-        <div class="flex items-center justify-between mt-2 relative z-10">
-          <span id="statUfTrend" class="text-[11px] text-emerald-600 font-medium">—</span>
-          <span class="text-[10px] text-slate-400">เป้า &lt;2.5L</span>
-        </div>
-      </div>
-      <!-- CLAIM -->
-      <div class="stat-card bg-white rounded-[20px] p-5 shadow-sm border border-slate-100 relative overflow-hidden">
-        <div class="absolute -bottom-8 -right-8 w-28 h-28 rounded-full opacity-[0.06] bg-violet-500 pointer-events-none"></div>
-        <div class="flex items-center justify-between mb-3 relative z-10">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-          <span class="text-[10px] font-bold tracking-wider text-violet-600 bg-violet-50 px-2 py-1 rounded">CLAIM</span>
-        </div>
-        <div class="text-3xl font-bold text-slate-800 font-serif relative z-10"><span id="statClaim">0</span><span class="text-sm text-slate-400 font-normal ml-1">฿</span></div>
-        <div class="text-xs text-slate-500 mt-1 relative z-10">ค่าฟอกรวม วันนี้</div>
-        <div class="w-full h-1 bg-violet-100 rounded-full mt-3 relative z-10"><div id="statClaimBar" class="h-full bg-violet-500 rounded-full transition-all duration-500" style="width:0%"></div></div>
-        <div class="flex items-center justify-between mt-2 relative z-10">
-          <span id="statClaimTrend" class="text-[11px] text-emerald-600 font-medium">—</span>
-          <span id="statClaimPerSession" class="text-[10px] text-slate-400">0฿ / ครั้ง</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Filters -->
-  <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-5 no-print">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-display text-base font-semibold text-slate-700 flex items-center gap-2">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-brand-600"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        ตัวกรองข้อมูล
-      </h2>
-      <div class="text-xs text-slate-500"><span id="filterSummary">—</span></div>
-    </div>
-
-    <!-- Row 1: preset buttons -->
-    <div class="flex flex-wrap items-center gap-2 mb-3">
-      <button id="presetToday" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">วันนี้</button>
-      <button id="preset7d" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">7 วัน</button>
-      <button id="preset30d" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">30 วัน</button>
-      <button id="presetMonth" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">เดือนนี้</button>
-      <button id="presetLastMonth" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">เดือนที่แล้ว</button>
-      <button id="presetYear" class="preset-btn text-xs px-3 py-1.5 rounded-full border font-medium transition-all">ปีนี้</button>
-    </div>
-
-    <!-- Row 2: date range + clinic + pttype -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-      <div class="lg:col-span-4">
-        <label class="block text-xs font-medium text-slate-600 mb-1">ช่วงวันที่</label>
-        <div class="flex items-center gap-0 bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-brand-400">
-          <input id="dateFrom" type="text" placeholder="วันเริ่มต้น" readonly
-            class="flex-1 px-3 py-2.5 outline-none text-sm bg-transparent cursor-pointer">
-          <div class="px-1 text-slate-300">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-          <input id="dateTo" type="text" placeholder="วันสิ้นสุด" readonly
-            class="flex-1 px-3 py-2.5 outline-none text-sm bg-transparent cursor-pointer">
-        </div>
-      </div>
-      <div class="lg:col-span-3">
-        <label class="block text-xs font-medium text-slate-600 mb-1">คลินิก</label>
-        <div class="relative">
-          <input id="filterClinic" type="text" placeholder="— ทุกคลินิก —" autocomplete="off"
-            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm bg-white"
-            data-code="">
-          <div id="clinicDropdown" class="hidden absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-auto text-sm"></div>
-        </div>
-      </div>
-      <div class="lg:col-span-3">
-        <label class="block text-xs font-medium text-slate-600 mb-1">สิทธิการรักษา</label>
-        <select id="filterPttype" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm bg-white">
-          <option value="">— ทุกสิทธิ —</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Row 3: search HN + checkbox -->
-    <div class="flex flex-wrap items-end gap-4 mt-3">
-      <div class="w-full md:w-auto md:min-w-[280px]">
-        <label class="block text-xs font-medium text-slate-600 mb-1">ค้นหา HN / ชื่อ</label>
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="searchInput" type="text" placeholder="พิมพ์ HN หรือชื่อ..." class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-400 outline-none text-sm">
-        </div>
-      </div>
-      <div class="pb-1">
-        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-          <input id="filterReady" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-          <span class="text-sm text-slate-700">แสดงเฉพาะที่พร้อมส่ง (Complete)</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Row 4: action buttons -->
-    <div class="flex flex-wrap items-center gap-2 mt-4">
-      <div class="flex-1"></div>
-      <button id="btnHdClaim" class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:shadow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        ส่งเคลม HD
-      </button>
-      <button id="btnDmis" class="btn-orange inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:shadow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        ส่งเคลม DMIS
-      </button>
-      <button id="btnRefresh" class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:shadow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
-        โหลดข้อมูล
-      </button>
-      <button id="btnExport" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export CSV
-      </button>
-      <button id="btnPrint" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        พิมพ์
-      </button>
-    </div>
-  </section>
-
-  <!-- Table -->
-  <section class="bg-white rounded-2xl border border-slate-100 table-shadow overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-      <div class="flex items-center gap-3">
-        <h3 class="font-display font-semibold text-slate-700">รายชื่อผู้รับบริการ</h3>
-        <span id="recordCount" class="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-semibold">0 รายการ</span>
-      </div>
-      <div class="text-xs text-slate-500" id="lastUpdated">—</div>
-    </div>
-
-    <div class="overflow-auto scrollbar-thin" style="max-height: calc(100vh - 360px);">
-      <table class="reg-table w-full text-sm">
-        <thead class="bg-slate-50 text-slate-600">
-          <tr>
-            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">#</th>
-            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">HN</th>
-            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">ชื่อ-สกุล</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">อายุ</th>
-            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">สิทธิ</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">วันที่ฟอก</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">เวลา</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">น้ำหนัก<br><span class="text-[10px] font-normal text-slate-400">ก่อน / หลัง</span></th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">BP<br><span class="text-[10px] font-normal text-slate-400">ก่อน / หลัง</span></th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">UF (L)</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">URR%</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Kt/V</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Hb / Hct</th>
-            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Vascular</th>
-            <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">ค่าฟอก (฿)</th>
-            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">รายละเอียด</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody" class="divide-y divide-slate-100">
-          <tr><td colspan="16" class="px-6 py-16 text-center text-slate-400">
-            <div class="flex flex-col items-center gap-3">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="text-slate-300"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <div class="font-medium text-slate-500">เลือกช่วงวันที่แล้วกด "โหลดข้อมูล"</div>
-              <div class="text-xs">กรองตามสิทธิรักษา · ค้นหา HN/ชื่อ ได้ในแต่ละช่วง</div>
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:20px 22px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:6px;">สรุปวันนี้</div>
+            <div id="today-date" style="font-size:12.5px;color:#8b99a9;margin-bottom:18px;"></div>
+            <div id="today-summary"></div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eef1f5;display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:13px;color:#54657a;">ลดเวลาทำงาน</span>
+              <span style="font-size:22px;font-weight:700;color:#1a8a5a;">~82%</span>
             </div>
-          </td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/30 text-xs text-slate-500">
-      <div>หมายเหตุ: คลิกแถวเพื่อดูรายละเอียดเพิ่มเติม (Lab, ยา ESA, สาย, Membrane, Dialyzer ฯลฯ)</div>
-      <div id="pagerArea"></div>
-    </div>
-  </section>
-
-  <footer class="text-center text-xs text-slate-400 mt-6 pb-4">
-    <span class="font-display">Dialysis Smart Claim System</span> · powered by BMS HOSxP API
-  </footer>
-</main>
-
-<!-- Detail Modal -->
-<div id="detailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-    <div class="px-6 py-4 border-b flex items-center justify-between bg-gradient-to-r from-brand-50 to-teal2-400/10">
-      <div>
-        <div class="text-xs text-brand-700 font-semibold tracking-wider">PATIENT DETAIL</div>
-        <h3 id="modalTitle" class="font-display text-lg font-bold text-slate-800">—</h3>
-      </div>
-      <button id="closeModal" class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div id="modalBody" class="overflow-auto p-6 scrollbar-thin"></div>
-  </div>
-</div>
-
-<!-- Settings Modal -->
-<div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-    <div class="px-6 py-4 border-b flex items-center justify-between bg-gradient-to-r from-brand-50 to-teal2-400/10">
-      <div>
-        <div class="text-xs text-brand-700 font-semibold tracking-wider">SETTINGS</div>
-        <h3 class="font-display text-lg font-bold text-slate-800">ตั้งค่าระบบ</h3>
-      </div>
-      <button id="closeSettings" class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="p-6 space-y-4">
-      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-        <div>
-          <div class="font-medium text-slate-800">ตรวจสอบก่อนข้อมูลบันทึก</div>
-          <div class="text-xs text-slate-500 mt-1">เปิดใช้งานเพื่อตรวจสอบความถูกต้องของข้อมูลก่อนบันทึกลงระบบ</div>
+          </div>
         </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input id="verifyModeToggle" type="checkbox" class="sr-only peer">
-          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-        </label>
       </div>
-    </div>
+
+      <!-- ============ QUEUE ============ -->
+      <div id="screen-queue" class="screen">
+        <!-- Search filters -->
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:16px 20px;margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:700;color:#1c2e44;margin-bottom:12px;">ค้นหาข้อมูล</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:0 0 auto;">
+              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">วันที่รับบริการ</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="date-wrap" onclick="openDatePicker('q-date-from')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span id="q-date-from-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+                  <input type="date" id="q-date-from" onchange="updateDateLabel('q-date-from')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+                </div>
+                <span style="font-size:12px;color:#8b99a9;padding:0 2px;">–</span>
+                <div class="date-wrap" onclick="openDatePicker('q-date-to')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span id="q-date-to-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+                  <input type="date" id="q-date-to" onchange="updateDateLabel('q-date-to')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+                </div>
+              </div>
+            </div>
+            <div style="flex:0 0 160px;">
+              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">สถานะการตรวจสอบ</div>
+              <select id="q-status" style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1c2e44;background:#fff;outline:none;">
+                <option value="">ทั้งหมด</option>
+                <option value="ready">พร้อมส่ง</option>
+                <option value="review">ยังไม่ยืนยัน</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:160px;">
+              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">สิทธิรักษา</div>
+              <select id="q-pttype" style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1c2e44;background:#fff;outline:none;">
+                <option value="">ทั้งหมด</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:160px;">
+              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">คลินิก</div>
+              <select id="q-clinic" style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#1c2e44;background:#fff;outline:none;">
+                <option value="">ทั้งหมด</option>
+              </select>
+            </div>
+            <div style="flex:0 0 auto;">
+              <button onclick="searchQueue()" class="btn-orange" style="padding:9px 24px;font-size:13.5px;">ค้นหา</button>
+            </div>
+          </div>
+        </div>
+        <!-- Action bar -->
+        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+          <div id="queue-summary" style="font-size:13px;color:#6b7a8d;"></div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-ghost" onclick="exportQueueExcel()" style="display:flex;align-items:center;gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Export Excel
+            </button>
+            <button class="btn-ghost" style="border-color:#2563a8;color:#2563a8;" onclick="openConfirmScreen()">ยืนยันส่งพร้อม</button>
+            <button class="btn-ghost" style="border-color:#1a7a4a;color:#1a7a4a;" onclick="">ส่งเคลม HD</button>
+            <button class="btn-orange" onclick="">ส่งเคลม DMIS</button>
+          </div>
+        </div>
+        <!-- Table -->
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <div style="min-width:1760px;">
+              <div style="display:grid;grid-template-columns:135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 125px 78px;gap:6px;padding:11px 18px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:11.5px;font-weight:700;color:#6b7a8d;letter-spacing:.3px;white-space:nowrap;">
+                <div>เลขบัตร</div><div>HN</div><div>ชื่อ-สกุล</div><div>อายุ</div><div>สิทธิ</div><div>วันที่ฟอก</div><div>เวลาเริ่ม</div><div>เวลาสิ้นสุด</div><div>น.ก่อน(kg)</div><div>น.หลัง(kg)</div><div>BP ก่อน</div><div>BP หลัง</div><div>UF(L)</div><div>URR</div><div>KT/V</div><div>ยอดเบิก</div><div>สถานะ</div><div style="text-align:right;">จัดการ</div>
+              </div>
+              <div id="queue-table"><div style="padding:40px;text-align:center;color:#8b99a9;font-size:13.5px;">กรุณาเลือกวันที่และกดค้นหา</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MAPPING / DETAIL ============ -->
+      <div id="screen-detail" class="screen">
+        <button onclick="navigate('queue')" style="background:none;border:none;color:#1d4e89;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;padding:0;margin-bottom:14px;display:flex;align-items:center;gap:6px;">← กลับไปคิวรอเบิก</button>
+        <div style="background:#0d2742;color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+          <div style="display:flex;align-items:center;gap:18px;">
+            <div style="width:54px;height:54px;border-radius:12px;background:#1d3e60;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#cfe0f0;flex:0 0 auto;">สญ</div>
+            <div>
+              <div style="font-size:20px;font-weight:700;line-height:1.1;">นางสมหญิง ใจดี</div>
+              <div style="font-size:13px;color:#9fb3c8;margin-top:4px;font-family:'IBM Plex Mono',monospace;">HN 00125634 · CID 1-3099-0xxxx-xx-1 · อายุ 60 ปี</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:26px;text-align:right;">
+            <div><div style="font-size:11.5px;color:#8aa0b8;">สิทธิการรักษา</div><div style="font-size:15px;font-weight:600;margin-top:2px;">UC (บัตรทอง)</div></div>
+            <div><div style="font-size:11.5px;color:#8aa0b8;">วันที่ฟอกเลือด</div><div style="font-size:15px;font-weight:600;margin-top:2px;">14/06/2569</div></div>
+            <div><div style="font-size:11.5px;color:#8aa0b8;">ยอดเบิกรวม</div><div style="font-size:15px;font-weight:600;margin-top:2px;color:#f0871f;">฿1,500</div></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:13px;color:#6b7a8d;">ระบบดึงข้อมูลจาก HIS และจับคู่กับฟิลด์ DMIS &amp; HD โดยอัตโนมัติ — กรุณายืนยันรายการที่มีสถานะ <span style="color:#c9821a;font-weight:600;">ตรวจสอบ</span></div>
+          <div style="display:flex;gap:18px;font-size:12.5px;color:#6b7a8d;">
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:#1a8a5a;display:inline-block;"></span>จับคู่อัตโนมัติ</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:#d99b1c;display:inline-block;"></span>ต้องตรวจสอบ</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:#b9c4d0;display:inline-block;"></span>ไม่มีข้อมูล</span>
+          </div>
+        </div>
+        <div id="field-groups" style="display:flex;flex-direction:column;gap:16px;"></div>
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:22px;">
+          <button onclick="navigate('queue')" style="background:#fff;color:#54657a;border:1px solid #d6deea;border-radius:9px;padding:11px 22px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">ยกเลิก</button>
+          <button class="btn-orange" style="padding:11px 26px;font-size:14px;">ยืนยัน &amp; ส่งเบิก DMIS &amp; HD</button>
+        </div>
+      </div>
+
+      <!-- ============ ERRORS / REJECT ============ -->
+      <div id="screen-errors" class="screen">
+        <div style="background:#fbe9e9;border:1px solid #f1c9c9;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+          <span style="width:30px;height:30px;border-radius:50%;background:#cf3b3b;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:0 0 auto;">6</span>
+          <div style="font-size:14px;color:#8a2a2a;">มี <b>6 รายการ</b> ที่ส่งเบิกไม่สำเร็จ ระบบหยุดและรอการแก้ไขจากเจ้าหน้าที่ — รายการที่เหลือส่งสำเร็จอัตโนมัติแล้ว</div>
+        </div>
+        <div id="error-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- ============ LOGS ============ -->
+      <div id="screen-logs" class="screen">
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:150px 130px 1.5fr 1fr 120px;gap:10px;padding:13px 20px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:12px;font-weight:600;color:#6b7a8d;">
+            <div>เวลา</div><div>ผู้ดำเนินการ</div><div>การดำเนินการ</div><div>รายการ</div><div>ผล</div>
+          </div>
+          <div id="log-table"></div>
+        </div>
+      </div>
+
+      <!-- ============ SETTINGS ============ -->
+      <div id="screen-settings" class="screen">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:22px 24px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:4px;">เกณฑ์การเบิกอัตโนมัติ</div>
+            <div style="font-size:12.5px;color:#8b99a9;margin-bottom:18px;">ระบบจะส่งเบิกอัตโนมัติเมื่อผ่านเกณฑ์ทั้งหมด</div>
+            <div id="rules-list"></div>
+          </div>
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:22px 24px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:4px;">การจับคู่ฟิลด์ (Field Mapping)</div>
+            <div style="font-size:12.5px;color:#8b99a9;margin-bottom:18px;">การจับคู่ฟิลด์ HIS → DMIS &amp; HD</div>
+            <div id="mapping-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ DISPLAY / THEME ============ -->
+      <div id="screen-display" class="screen">
+        <div style="max-width:780px;">
+
+          <!-- Theme selector -->
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:24px 26px;margin-bottom:18px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:4px;">ธีมสี</div>
+            <div style="font-size:13px;color:#8b99a9;margin-bottom:22px;">เลือกธีมที่ต้องการ — จะแสดงผลทันทีและจดจำการตั้งค่า</div>
+            <div id="theme-cards" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;"></div>
+          </div>
+
+          <!-- Font size -->
+          <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:24px 26px;">
+            <div style="font-size:16px;font-weight:700;color:#0d2742;margin-bottom:4px;">ขนาดตัวอักษร</div>
+            <div style="font-size:13px;color:#8b99a9;margin-bottom:20px;">ปรับขนาดตัวอักษรทั่วทั้งระบบ</div>
+            <div style="display:flex;gap:12px;" id="font-size-btns">
+              <button onclick="setFontSize('small')"   data-fs="small"   style="flex:1;padding:12px;border:2px solid #e4e9f0;border-radius:10px;background:#fff;font-family:inherit;cursor:pointer;font-size:13px;">เล็ก</button>
+              <button onclick="setFontSize('normal')"  data-fs="normal"  style="flex:1;padding:12px;border:2px solid #e4e9f0;border-radius:10px;background:#fff;font-family:inherit;cursor:pointer;font-size:15px;">ปกติ</button>
+              <button onclick="setFontSize('large')"   data-fs="large"   style="flex:1;padding:12px;border:2px solid #e4e9f0;border-radius:10px;background:#fff;font-family:inherit;cursor:pointer;font-size:17px;">ใหญ่</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
   </div>
 </div>
 
 <script>
-// ===== CONFIG (no secrets in this file) =====
-const SESSION_VERIFY_URL = "https://hosxp.net/phapi/PasteJSON";
-const APP_NAME = "BMS.Dashboard.React";
-const LEGACY_STORAGE_KEY = "dscs.session"; // for cleanup of old cached sessions
+// ===== DATA =====
+const STATS = [
+  {label:'รอเบิก (Pending)', value:'124', sub:'รายการจาก HIS', tone:'#2563a8'},
+  {label:'ส่งสำเร็จวันนี้', value:'87', sub:'อัตโนมัติ 100%', tone:'#1a8a5a'},
+  {label:'ติด Reject', value:'6', sub:'ต้องแก้ไข', tone:'#cf3b3b'},
+  {label:'ยอดเบิกเดือนนี้', value:'฿1.42M', sub:'มิ.ย. 2569', tone:'#c9821a'},
+];
+const PIPELINE = [
+  {n:'1',t:'บันทึกใน HIS',d:'พยาบาลบันทึกการฟอกเลือด',bg:'#eef3f8',fg:'#1d4e89',border:'#d6e2ee',arrow:true},
+  {n:'2',t:'ทะเบียนฟอกเลือด',d:'ระบบดึง 40 ฟิลด์จาก HIS',bg:'#f0871f',fg:'#fff',border:'#f0871f',arrow:true},
+  {n:'3',t:'ตรวจสอบ & ยืนยันพร้อมส่ง',d:'DMIS & HD',bg:'#f0871f',fg:'#fff',border:'#f0871f',arrow:true},
+  {n:'4',t:'ส่งเบิกอัตโนมัติ',d:'ส่งเข้า DMIS & HD',bg:'#f0871f',fg:'#fff',border:'#f0871f',arrow:true},
+  {n:'5',t:'ยืนยันผล',d:'แจ้งเฉพาะที่ผิดพลาด',bg:'#e6f4ec',fg:'#1a8a5a',border:'#c4e6d3',arrow:false},
+];
+const ACTIVITY = [
+  {time:'12:48',tone:'#1a8a5a',text:'ส่งเบิกสำเร็จ — HN 00125634 (นางสมหญิง ใจดี)'},
+  {time:'12:41',tone:'#1a8a5a',text:'ส่งเบิกสำเร็จ — HN 00118720 (นายมานพ ศรีสุข)'},
+  {time:'12:30',tone:'#cf3b3b',text:'ติด Reject — URR ต่ำกว่าเกณฑ์ HN 00120945'},
+  {time:'12:15',tone:'#f0871f',text:'รอยืนยัน ESA/EPO — HN 00114562'},
+  {time:'12:02',tone:'#2563a8',text:'ดึงข้อมูล 18 รายการใหม่จาก HIS'},
+];
+const TODAY_SUMMARY = [
+  {label:'ส่งสำเร็จอัตโนมัติ',val:'87 / 99',pct:'88%',tone:'#1a8a5a'},
+  {label:'รอเจ้าหน้าที่ยืนยัน',val:'6',pct:'6%',tone:'#c9821a'},
+  {label:'ติด Reject',val:'6',pct:'6%',tone:'#cf3b3b'},
+];
+// queue rows fetched from API
+let queueRows = [];
+const FIELD_GROUPS = [
+  { title:'ข้อมูลผู้ป่วยและสิทธิ', hint:'จากทะเบียนผู้ป่วย', accent:'#3f9b6d', headBg:'#eef7f1', countLabel:'7 ฟิลด์',
+    rows:[
+      {dmis:'เลขบัตรประชาชน',code:'CID',val:'1-3099-0xxxx-xx-1',st:'ok'},
+      {dmis:'ชื่อ-สกุล',code:'PT_NAME',val:'นางสมหญิง ใจดี',st:'ok'},
+      {dmis:'วันเกิด',code:'BIRTH',val:'12/05/2508',st:'ok'},
+      {dmis:'อายุ',code:'AGE',val:'60 ปี',st:'ok'},
+      {dmis:'วันอนุมัติ HD',code:'HD_APPROVE',val:'01/10/2566',st:'ok'},
+      {dmis:'HN',code:'HN',val:'00125634',st:'ok'},
+      {dmis:'Patient Type',code:'PT_TYPE',val:'ผู้ป่วยนอก',st:'ok'},
+    ]},
+  { title:'ข้อมูลการฟอกเลือด (Session)', hint:'ค่าที่บันทึกขณะให้บริการ', accent:'#2f5d97', headBg:'#eef3fa', countLabel:'12 ฟิลด์',
+    rows:[
+      {dmis:'วันที่ทำ HD',code:'HD_DATE',val:'14/06/2569',st:'ok'},
+      {dmis:'เวลาเริ่ม',code:'TIME_START',val:'08:30',st:'ok'},
+      {dmis:'เวลาสิ้นสุด',code:'TIME_END',val:'12:30',st:'ok'},
+      {dmis:'HD Mode',code:'HD_MODE',val:'HD',st:'ok'},
+      {dmis:'Blood Flow',code:'QB',val:'300 mL/min',st:'ok'},
+      {dmis:'ส่วนสูง (cm)',code:'HEIGHT',val:'158',st:'ok'},
+      {dmis:'น้ำหนักก่อน (kg)',code:'WT_PRE',val:'62.4',st:'ok'},
+      {dmis:'น้ำหนักหลัง (kg)',code:'WT_POST',val:'60.1',st:'ok'},
+      {dmis:'BP ก่อน',code:'BP_PRE',val:'150/90',st:'ok'},
+      {dmis:'BP หลัง',code:'BP_POST',val:'138/84',st:'ok'},
+      {dmis:'Ultrafiltration (L)',code:'UF_L',val:'2.3',st:'ok'},
+      {dmis:'Ultrafiltration (Kg)',code:'UF_KG',val:'2.3',st:'ok'},
+    ]},
+  { title:'ค่าแล็บและความเพียงพอการฟอก', hint:'นำเข้าจากผลแล็บ', accent:'#d98324', headBg:'#fbf2e4', countLabel:'8 ฟิลด์',
+    rows:[
+      {dmis:'Creatinine',code:'CREAT',val:'9.8 mg/dL',st:'ok'},
+      {dmis:'Albumin',code:'ALB',val:'3.8 g/dL',st:'ok'},
+      {dmis:'Hb',code:'HB',val:'10.5 g/dL',st:'ok'},
+      {dmis:'Hct (EPO)',code:'HCT',val:'33 %',st:'ok'},
+      {dmis:'Pre BUN',code:'BUN_PRE',val:'68 mg/dL',st:'ok'},
+      {dmis:'Post BUN',code:'BUN_POST',val:'18 mg/dL',st:'ok'},
+      {dmis:'URR',code:'URR',val:'73.5 %',st:'ok'},
+      {dmis:'Kt/V',code:'KTV',val:'1.4',st:'review'},
+    ]},
+  { title:'อุปกรณ์และการเข้าถึงหลอดเลือด', hint:'ข้อมูลอุปกรณ์', accent:'#2f8f9e', headBg:'#e9f4f6', countLabel:'6 ฟิลด์',
+    rows:[
+      {dmis:'Vascular Access',code:'VAS_ACC',val:'AVF',st:'ok'},
+      {dmis:'Dbl Lumen',code:'DBL_LUMEN',val:'ไม่มี',st:'empty'},
+      {dmis:'Membrane',code:'MEMBRANE',val:'High-flux',st:'ok'},
+      {dmis:'Dialyzer',code:'DIALYZER',val:'FX80',st:'ok'},
+      {dmis:'New Dialyzer',code:'NEW_DIAL',val:'ใช้ซ้ำครั้งที่ 3',st:'ok'},
+      {dmis:'Spec Cond',code:'SPEC_COND',val:'-',st:'empty'},
+    ]},
+  { title:'รายการที่เบิกเงินได้', hint:'รายการเบิกค่าบริการและยา', accent:'#c98a16', headBg:'#fbf6e3', countLabel:'8 ฟิลด์',
+    rows:[
+      {dmis:'HD Claim (บาท)',code:'HD_CLAIM',val:'1,500',st:'ok'},
+      {dmis:'ESA / EPO',code:'ESA',val:'Erythropoietin 4,000 IU',st:'review'},
+      {dmis:'IV Iron',code:'IV_IRON',val:'-',st:'empty'},
+      {dmis:'Blood TF',code:'BLOOD_TF',val:'-',st:'empty'},
+      {dmis:'Low Mol Heparin',code:'LMWH',val:'Enoxaparin 40 mg',st:'ok'},
+      {dmis:'Par Nutr',code:'PAR_NUTR',val:'-',st:'empty'},
+      {dmis:'Lab / X-ray',code:'LAB_XRAY',val:'CBC',st:'ok'},
+      {dmis:'Human Alb',code:'HUMAN_ALB',val:'-',st:'empty'},
+    ]},
+];
+const ERRORS = [
+  {hn:'00120945',name:'นางวันดี ทองคำ',reason:'เลขอนุมัติ HD หมดอายุ',code:'ERR-AUTH-02',date:'14/06/69',sev:'#cf3b3b',tag:'สิทธิ',tagColor:'#8a2a2a',tagBg:'#fbe9e9'},
+  {hn:'00114562',name:'นายอภิชาติ ดวงดี',reason:'URR ต่ำกว่าเกณฑ์ ต้องแนบผลแล็บยืนยัน',code:'ERR-LAB-07',date:'14/06/69',sev:'#d99b1c',tag:'แล็บ',tagColor:'#92651a',tagBg:'#fbf1de'},
+  {hn:'00118720',name:'นายมานพ ศรีสุข',reason:'สิทธิไม่ตรงกับฐานข้อมูล สปสช.',code:'ERR-ELIG-11',date:'13/06/69',sev:'#cf3b3b',tag:'สิทธิ',tagColor:'#8a2a2a',tagBg:'#fbe9e9'},
+  {hn:'00131207',name:'นางสาวกานดา แก้วใส',reason:'ซ้ำซ้อนกับการเบิกครั้งก่อนหน้า',code:'ERR-DUP-03',date:'13/06/69',sev:'#d99b1c',tag:'ซ้ำซ้อน',tagColor:'#92651a',tagBg:'#fbf1de'},
+];
+const LOGS = [
+  {time:'14/06 12:48:21',actor:'ระบบ',actorTone:'#2563a8',action:'ส่งเบิกอัตโนมัติเข้า DMIS & HD',target:'HN 00125634',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+  {time:'14/06 12:41:09',actor:'ระบบ',actorTone:'#2563a8',action:'ดึงข้อมูล 40 ฟิลด์จาก HIS',target:'HN 00118720',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+  {time:'14/06 12:30:55',actor:'ระบบ',actorTone:'#cf3b3b',action:'ตรวจเกณฑ์ — URR ต่ำกว่าเกณฑ์',target:'HN 00120945',result:'Reject',resColor:'#cf3b3b',resBg:'#fbe9e9'},
+  {time:'14/06 12:15:02',actor:'รสริน',actorTone:'#f0871f',action:'ยืนยันรายการ ESA/EPO ก่อนส่ง',target:'HN 00114562',result:'ยืนยัน',resColor:'#c9821a',resBg:'#fbf1de'},
+  {time:'14/06 12:02:48',actor:'ระบบ',actorTone:'#2563a8',action:'ซิงก์รายการใหม่จาก HIS (18 ราย)',target:'Batch #2240',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+  {time:'14/06 11:48:30',actor:'ระบบ',actorTone:'#2563a8',action:'ส่งเบิกอัตโนมัติเข้า DMIS & HD',target:'HN 00109833',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+  {time:'14/06 11:30:14',actor:'รสริน',actorTone:'#f0871f',action:'แก้ไขสิทธิและส่งใหม่',target:'HN 00131207',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+  {time:'14/06 09:00:00',actor:'ระบบ',actorTone:'#2563a8',action:'เริ่มรอบประมวลผลอัตโนมัติประจำวัน',target:'Batch #2238',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
+];
+const RULES = [
+  {label:'ตรวจสอบสิทธิกับฐานข้อมูล สปสช. ก่อนส่ง',on:true},
+  {label:'ต้องมีเลขอนุมัติ HD ที่ยังไม่หมดอายุ',on:true},
+  {label:'URR ต้อง ≥ 65% และ Kt/V ≥ 1.2',on:true},
+  {label:'ป้องกันการเบิกซ้ำซ้อน (วันเดียวกัน)',on:true},
+  {label:'หยุดรายการที่มีค่าผิดปกติเพื่อให้ จนท. ตรวจ',on:true},
+];
+const MAP_CONFIG = [
+  {his:'HIS.CID',dmis:'เลขบัตรประชาชน'},
+  {his:'HIS.HD_DATE',dmis:'วันที่ทำ HD'},
+  {his:'HIS.QB',dmis:'Blood Flow'},
+  {his:'HIS.LAB_URR',dmis:'URR'},
+  {his:'HIS.DIALYZER',dmis:'Dialyzer'},
+  {his:'HIS.DRUG_ESA',dmis:'ESA / EPO'},
+];
+const NAV_MENU = [
+  {key:'dashboard', label:'Dashboard', icon:'grid'},
+  {key:'queue', label:'ส่งเคลมฟอกเลือด', icon:'list', badge:'124'},
+  {key:'errors', label:'รายการ Reject', icon:'alert', badge:'6'},
+  {key:'logs', label:'ประวัติการส่งเบิก', icon:'history'},
+  {key:'settings', label:'ตั้งค่า', icon:'gear', noNav:true, submenu:[
+    {key:'display',  label:'หน้าจอ'},
+    {key:'settings', label:'ตั้งค่าส่งเคลม'},
+  ]},
+];
+const PAGE_TITLES = {
+  dashboard: ['รายงานส่งเบิกเคลมฟอกเลือด','สถานะการคีย์เบิกฟอกเลือดอัตโนมัติ DMIS & HD'],
+  queue:     ['ทะเบียนรับบริการฟอกเลือดเพื่อการส่งเบิกเคลม','รายการที่บันทึกใน HIS และพร้อมส่งเบิก'],
+  detail:    ['ตรวจสอบก่อนส่งเบิก','จับคู่ข้อมูล HIS → DMIS & HD'],
+  errors:    ['รายการ Reject','รายการที่ส่งไม่สำเร็จ ต้องแก้ไข'],
+  logs:      ['ประวัติการส่งเบิก','Audit trail การทำงานของระบบ'],
+  settings:  ['ตั้งค่าส่งเคลม','เกณฑ์การเบิกและการจับคู่ฟิลด์'],
+  display:   ['หน้าจอ','ปรับแต่งธีมสีและการแสดงผล'],
+};
 
-// ===== STATE =====
-let session = null;
-let allRows = [];
-let clinicList = [];
-let verifyMode = false;
-let previousStats = null;
-
-// ===== HELPERS =====
-const $ = (id) => document.getElementById(id);
-const fmt = (v, d=1) => (v == null || v === '' || isNaN(v)) ? '—' : Number(v).toFixed(d);
-const fmtInt = (v) => (v == null || v === '' || isNaN(v)) ? '—' : Math.round(Number(v)).toLocaleString();
-const fmtMoney = (v) => (v == null || v === '' || isNaN(v)) ? '—' : Number(v).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-const safe = (v) => (v == null || v === '') ? '—' : v;
-const fmtDate = (v) => { if (!v) return '—'; const d = new Date(v); if (isNaN(d)) return v; return d.toLocaleDateString('th-TH', {year:'numeric', month:'short', day:'numeric'}); };
-const fmtTime = (v) => { if (!v) return '—'; return String(v).substring(0,5); };
-function todayISO() { return new Date().toISOString().split('T')[0]; }
-function isoOffset(days) { const d = new Date(); d.setDate(d.getDate()+days); return d.toISOString().split('T')[0]; }
-function escapeHtml(s) { if (s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-// ===== SESSION MANAGEMENT =====
-// Policy: session is verified against the API every time the page opens.
-// No localStorage / cookie persistence — Session ID lives only in memory.
-function clearAnyCachedSession() {
-  try { localStorage.removeItem(LEGACY_STORAGE_KEY); } catch {}
-  // Remove any legacy cookie set by older versions
-  document.cookie = 'bms-session-id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+// ===== SVG ICONS =====
+function svgIcon(name, color) {
+  const w = 18, h = 18, vb = '0 0 20 20';
+  const attr = `width="${w}" height="${h}" viewBox="${vb}" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"`;
+  const p = d => `<path d="${d}"/>`;
+  const c = (cx,cy,r,fill='') => `<circle cx="${cx}" cy="${cy}" r="${r}" ${fill}/>`;
+  const r = (x,y,w,h,rx) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+  const bodies = {
+    grid:    r(2.5,2.5,6,6,1.2)+r(11.5,2.5,6,6,1.2)+r(2.5,11.5,6,6,1.2)+r(11.5,11.5,6,6,1.2),
+    list:    p('M3 5h14')+p('M3 10h14')+p('M3 15h14'),
+    alert:   p('M10 3l8 14H2z')+p('M10 8v4')+c(10,14.5,.4),
+    history: c(10,10,7.5)+p('M10 6v4l3 2'),
+    gear:    p('M3 7h14')+p('M3 13h14')+c(7,7,2,`fill="${color}"`)+c(13,13,2,`fill="${color}"`),
+  };
+  return `<svg ${attr}>${bodies[name]||''}</svg>`;
 }
 
-async function verifySession(sessionId) {
-  const url = `${SESSION_VERIFY_URL}?Action=GET&code=${encodeURIComponent(sessionId)}`;
-  console.log('[verifySession] →', url);
-  let res;
-  try {
-    res = await fetch(url, { headers: {'Accept':'application/json'} });
-  } catch (e) {
-    console.error('[verifySession] network error', e);
-    throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (network/CORS): ' + e.message);
+// ===== NAVIGATION =====
+let currentScreen = 'dashboard';
+let openSubmenu = null;
+
+function navigate(screen) {
+  currentScreen = screen;
+  const [title, sub] = PAGE_TITLES[screen] || ['',''];
+  document.getElementById('page-title').textContent = title;
+  document.getElementById('page-sub').textContent = sub;
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('screen-' + screen);
+  if (el) el.classList.add('active');
+  // re-render display page every time to ensure theme cards are visible
+  if (screen === 'display') renderDisplay();
+  if (screen === 'queue') initQueueScreen();
+  // ถ้า screen อยู่ใต้ parent ที่มี submenu ให้ expand submenu นั้นอัตโนมัติ
+  const pKey = getParentKey(screen);
+  if (pKey) {
+    const box = document.getElementById('sub-' + pKey);
+    if (box && box.style.display === 'none') {
+      box.style.display = 'block';
+      const arrow = document.getElementById('sub-arrow-' + pKey);
+      if (arrow) arrow.style.transform = 'rotate(90deg)';
+    }
   }
-  console.log('[verifySession] status', res.status);
-  if (!res.ok) throw new Error('HTTP '+res.status);
-  const data = await res.json();
-  console.log('[verifySession] body', data);
-  if (data.MessageCode !== 200) throw new Error('Session ใช้ไม่ได้: ' + (data.Message || 'unknown') + ' (code '+data.MessageCode+')');
-  const r = data.result || {};
-  const kvObj = (r.key_value && typeof r.key_value === 'object') ? r.key_value : {};
-  const apiUrl = kvObj["hosxp.api_url"] || r.user_info?.["hosxp.api_url"] || r.user_info?.bms_url;
-  const apiAuthKey = kvObj["hosxp.api_auth_key"] || r.user_info?.["hosxp.api_auth_key"]
-                   || r.user_info?.bms_session_code
-                   || (typeof r.key_value === 'string' ? r.key_value : null);
-  if (!apiUrl || !apiAuthKey) throw new Error('ไม่พบ API URL หรือ Auth Key ใน response');
+  updateNavActive();
+}
+
+// ตรวจว่า screen ปัจจุบันอยู่ใต้ parent key ไหน
+function getParentKey(screen) {
+  for (const m of NAV_MENU) {
+    if (!m.submenu) continue;
+    if (m.submenu.some(s => s.key === screen)) return m.key;
+  }
+  return null;
+}
+
+function updateNavActive() {
+  const s = currentScreen;
+  const isQueueLike   = s === 'queue' || s === 'detail';
+  const parentKey     = getParentKey(s);
+
+  document.querySelectorAll('.nav-btn[data-key]').forEach(btn => {
+    const key = btn.dataset.key;
+    const active = key === s
+      || (isQueueLike  && key === 'queue')
+      || (parentKey    && key === parentKey);
+    btn.classList.toggle('active', active);
+    const iconEl = btn.querySelector('.nav-icon');
+    if (iconEl) iconEl.innerHTML = svgIcon(btn.dataset.icon, active ? 'var(--accent)' : '#8295a8');
+    const badgeEl = btn.querySelector('.nav-badge');
+    if (badgeEl) badgeEl.style.background = active ? 'var(--accent)' : '#1d3e60';
+  });
+
+  document.querySelectorAll('.sub-btn[data-key]').forEach(btn => {
+    const active = btn.dataset.key === s;
+    btn.style.color      = active ? '#fff'                  : '#8aa0b8';
+    btn.style.fontWeight = active ? '600'                   : '400';
+    btn.style.background = active ? 'rgba(255,255,255,.08)' : 'transparent';
+  });
+}
+
+function toggleSubmenu(key) {
+  const box = document.getElementById('sub-' + key);
+  if (!box) return;
+  const isOpen = box.style.display !== 'none';
+  box.style.display = isOpen ? 'none' : 'block';
+  const arrow = document.getElementById('sub-arrow-' + key);
+  if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+  openSubmenu = isOpen ? null : key;
+}
+
+// ===== RENDER =====
+function renderNav() {
+  document.getElementById('nav-menu').innerHTML = NAV_MENU.map(m => {
+    const hasSub = m.submenu && m.submenu.length > 0;
+    const subHtml = hasSub ? `
+      <div id="sub-${m.key}" style="display:none;padding-left:20px;margin-top:2px;">
+        ${m.submenu.map(s => `
+          <button class="sub-btn" data-key="${s.key}" onclick="navigate('${s.key}')"
+            style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 13px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;font-size:13.5px;text-align:left;margin-bottom:2px;background:transparent;color:#8aa0b8;transition:background .15s;">
+            <span style="width:5px;height:5px;border-radius:50%;background:#4a627a;flex:0 0 auto;"></span>
+            ${s.label}
+          </button>
+        `).join('')}
+      </div>` : '';
+    // noNav = ไม่ navigate เมื่อคลิก parent แค่ toggle submenu
+    const clickAction = hasSub
+      ? (m.noNav ? `toggleSubmenu('${m.key}')` : `navigate('${m.key}'); toggleSubmenu('${m.key}');`)
+      : `navigate('${m.key}')`;
+    return `
+      <button class="nav-btn" data-key="${m.key}" data-icon="${m.icon}" onclick="${clickAction}">
+        <span class="nav-icon" style="display:flex;align-items:center;justify-content:center;width:20px;">${svgIcon(m.icon,'#8295a8')}</span>
+        <span style="flex:1;">${m.label}</span>
+        ${m.badge ? `<span class="nav-badge" style="background:#1d3e60;color:#9fb3c8;font-size:11px;font-weight:700;border-radius:11px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;">${m.badge}</span>` : ''}
+        ${hasSub ? `<span id="sub-arrow-${m.key}" style="font-size:10px;color:#62788f;transition:transform .2s;">▶</span>` : ''}
+      </button>
+      ${subHtml}
+    `;
+  }).join('');
+}
+
+function renderDashboard() {
+  document.getElementById('stat-cards').innerHTML = STATS.map(s => `
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:18px 18px 16px;">
+      <div style="height:4px;border-radius:4px;width:38px;margin-bottom:13px;background:${s.tone};"></div>
+      <div style="font-size:13px;color:#6b7a8d;font-weight:500;margin-bottom:6px;">${s.label}</div>
+      <div style="font-size:32px;font-weight:700;color:#0d2742;line-height:1;letter-spacing:-.5px;">${s.value}</div>
+      <div style="font-size:12.5px;color:#8b99a9;margin-top:7px;">${s.sub}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('pipeline').innerHTML = PIPELINE.map(p => `
+    <div style="flex:1;display:flex;align-items:center;">
+      <div style="flex:1;text-align:center;padding:0 6px;">
+        <div style="width:46px;height:46px;border-radius:50%;margin:0 auto 11px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;background:${p.bg};color:${p.fg};border:2px solid ${p.border};">${p.n}</div>
+        <div style="font-size:13.5px;font-weight:600;color:#243b54;margin-bottom:3px;">${p.t}</div>
+        <div style="font-size:11.5px;color:#8b99a9;line-height:1.35;">${p.d}</div>
+      </div>
+      ${p.arrow ? `<div style="width:30px;height:2px;background:#d4dde7;flex:0 0 auto;margin-bottom:34px;position:relative;"><div style="position:absolute;right:-1px;top:-3px;width:7px;height:7px;border-top:2px solid #d4dde7;border-right:2px solid #d4dde7;transform:rotate(45deg);"></div></div>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('activity-list').innerHTML = ACTIVITY.map(a => `
+    <div style="display:flex;gap:13px;padding:11px 0;border-bottom:1px solid #eef1f5;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#94a3b4;width:42px;flex:0 0 auto;padding-top:1px;">${a.time}</div>
+      <div style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;margin-top:5px;background:${a.tone};"></div>
+      <div style="font-size:13.5px;color:#33465c;line-height:1.4;">${a.text}</div>
+    </div>
+  `).join('');
+
+  const now = new Date();
+  document.getElementById('today-date').textContent = now.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('today-summary').innerHTML = TODAY_SUMMARY.map(t => `
+    <div style="margin-bottom:15px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+        <span style="color:#54657a;">${t.label}</span>
+        <span style="font-weight:700;color:#0d2742;">${t.val}</span>
+      </div>
+      <div style="height:7px;border-radius:5px;background:#eef1f5;overflow:hidden;">
+        <div style="height:100%;border-radius:5px;width:${t.pct};background:${t.tone};"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDatePicker(id) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  try { inp.showPicker(); } catch(e) {
+    inp.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:auto;border:none;';
+    inp.focus();
+    inp.click();
+    setTimeout(() => { inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;'; }, 200);
+  }
+}
+
+function updateDateLabel(id) {
+  const v = document.getElementById(id)?.value;
+  const lbl = document.getElementById(id + '-lbl');
+  if (!lbl) return;
+  if (v) {
+    const [y, m, d] = v.split('-');
+    lbl.textContent = `${d}/${m}/${y}`;
+    lbl.classList.add('has-value');
+  } else {
+    lbl.textContent = 'วว/ดด/ปปปป';
+    lbl.classList.remove('has-value');
+  }
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0,10);
+}
+function formatThaiDate(s) {
+  if (!s) return '-';
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return s;
+  return `${m[3]}/${m[2]}/${parseInt(m[1])+543}`;
+}
+function formatTime(s) {
+  if (!s) return '-';
+  return String(s).slice(0,5);
+}
+function computeQueueStatus(row) {
+  const keys = ['onset','onset_time','off_time','pre_weight','post_weight'];
+  return keys.every(k => row[k] != null && row[k] !== '') ? 'ready' : 'review';
+}
+function buildQueueSQL(from, to, pttype, clinic) {
+  const esc = s => s.replace(/'/g, "''");
+  let where = `WHERE v.vstdate BETWEEN '${from}' AND '${to}'`;
+  if (clinic) where += ` AND c.clinic='${esc(clinic)}'`;
+  if (pttype) where += ` AND pe.pttype='${esc(pttype)}'`;
+  return `SELECT
+    MAX(sv.clinic_hd_service_id) AS id,
+    v.vn,
+    MAX(p.cid) AS cid,
+    MAX(v.hn) AS hn,
+    MAX(CONCAT(p.pname,p.fname,' ',p.lname)) AS ptname,
+    MAX(p.birthday) AS birthday,
+    MAX(st.age_y) AS age,
+    MAX(pe.name) AS pttype,
+    MAX(pe.hipdata_code) AS hipdata,
+    '' AS date_hd,
+    MAX(sv.service_date) AS onset,
+    MAX(sv.service_time) AS onset_time,
+    MAX(sv.session_off_time) AS off_time,
+    MAX(sv.weight_pre_kgs) AS pre_weight,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bps END) AS pre_bps,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bpd END) AS pre_bpd,
+    MAX(sv.weight_post_kgs) AS post_weight,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bps END) AS post_bps,
+    MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bpd END) AS post_bpd,
+    MAX(s.height) AS height,
+    MAX(lab3.Creatinine) AS creatinine,
+    MAX(lab3.albumin) AS albumin,
+    MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
+    MAX(ROUND(((lab3.pre_bun-lab3.post_bun)/NULLIF(lab3.pre_bun*1.0,0))*100,2)) AS urr,
+    MAX(ROUND(((lab3.pre_bun-lab3.post_bun)*4)/NULLIF(CASE WHEN p.sex='1' THEN sv.weight_post_kgs*0.6 WHEN p.sex='2' THEN sv.weight_post_kgs*0.45 ELSE NULL END,0),2)) AS ktv,
+    MAX(lab3.hb) AS hb,
+    MAX((SELECT lbr.lab_order_result FROM lab_head lbh JOIN lab_order lbr ON lbr.lab_order_number=lbh.lab_order_number JOIN lab_items lbi ON lbi.lab_items_code=lbr.lab_items_code JOIN nondrugitems lbn ON lbn.icode=lbi.icode WHERE lbh.vn=sv.vn AND lbn.billcode='32201' LIMIT 1)) AS pre_dialysis_bun,
+    MAX((SELECT lbr.lab_order_result FROM lab_head lbh JOIN lab_order lbr ON lbr.lab_order_number=lbh.lab_order_number JOIN lab_items lbi ON lbi.lab_items_code=lbr.lab_items_code JOIN nondrugitems lbn ON lbn.icode=lbi.icode WHERE lbh.vn=sv.vn AND lbn.billcode='32203' LIMIT 1)) AS post_dialysis_bun,
+    (SELECT SUM(o.sum_price) FROM opitemrece o WHERE o.vn=v.vn AND o.income IN('06')) AS blood_flow,
+    MAX(m.clinic_hd_machine_name) AS membrane,
+    MAX(di.clinic_hd_dialyzer_name) AS dialyzer,
+    MAX(CASE WHEN ckd.clinic_hd_asm_va_type_id='1' THEN 'shunt' ELSE 'graft' END) AS vascular_access,
+    MAX(CASE WHEN ckd.clinic_hd_asm_catheter_type='DLC' THEN 'temp cath' ELSE 'pem cath' END) AS cath,
+    MAX(CASE WHEN sv.clinic_hd_dch_type_id='1' THEN 'Complete' WHEN sv.clinic_hd_dch_type_id='2' THEN 'Unstable' WHEN sv.clinic_hd_dch_type_id='3' THEN 'Hemofiltration' WHEN sv.clinic_hd_dch_type_id='4' THEN 'Initial' ELSE NULL END) AS spec_cond,
+    MAX(CASE WHEN v.an<>'' THEN 'IPD' ELSE 'OPD' END) AS patient_type,
+    '' AS new_dialyze,
+    'Chronic' AS hd_mode,
+    MAX(lab3.hct) AS hct,
+    (SELECT SUM(o.sum_price) FROM opitemrece o JOIN nondrugitems n ON o.icode=n.icode WHERE o.vn=v.vn AND n.billcode IN('71641','71640')) AS hd_claim,
+    (SELECT GROUP_CONCAT(DISTINCT med.clinic_hd_med_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_type med ON med.clinic_hd_med_type_id=md.clinic_hd_med_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS esa_epo,
+    (SELECT GROUP_CONCAT(DISTINCT md.qty SEPARATOR ', ') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_route_type mr ON mr.clinic_hd_med_route_type_id=md.clinic_hd_med_route_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS qty,
+    (SELECT GROUP_CONCAT(DISTINCT mr.clinic_hd_med_route_type_name SEPARATOR ', ') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_route_type mr ON mr.clinic_hd_med_route_type_id=md.clinic_hd_med_route_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS route,
+    (SELECT SUM(o.sum_price) FROM opitemrece o JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN('755043')) AS iv_iron,
+    MAX(pcr.clinic_hd_service_pcr_vol) AS blood_flow_rate,
+    MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
+    (SELECT SUM(o.sum_price) FROM opitemrece o JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN('107134','107110')) AS lowmolheparin,
+    '' AS dbllumen,
+    (SELECT SUM(o2.sum_price) FROM opitemrece o2 INNER JOIN nondrugitems nn ON nn.icode=o2.icode WHERE o2.vn=v.vn AND nn.billcode='55820') AS parnutr,
+    (SELECT SUM(o1.sum_price) FROM opitemrece o1 WHERE o1.vn=v.vn AND o1.income IN('07','08')) AS lab_xray,
+    (SELECT SUM(o3.sum_price) FROM opitemrece o3 INNER JOIN nondrugitems n ON n.icode=o3.icode WHERE o3.vn=v.vn AND n.billcode='34116') AS humanalb
+  FROM clinic_hd_service sv
+  LEFT JOIN ovst v ON sv.vn=v.vn
+  INNER JOIN vn_stat st ON st.vn=v.vn
+  INNER JOIN opdscreen s ON s.vn=v.vn
+  LEFT JOIN opdscreen_bp bp ON bp.vn=v.vn
+  INNER JOIN patient p ON p.hn=v.hn
+  INNER JOIN visit_pttype vp ON vp.vn=v.vn
+  INNER JOIN pttype pe ON pe.pttype=vp.pttype
+  INNER JOIN clinicmember c ON c.hn=v.hn
+  INNER JOIN clinic cc ON cc.clinic=c.clinic
+  LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
+  LEFT JOIN clinic_hd_machine m ON m.clinic_hd_machine_id=sv.clinic_hd_machine_id
+  LEFT JOIN clinic_hd_vss_type vas ON vas.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
+  LEFT JOIN clinic_hd_service_pcr pcr ON pcr.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN clinic_hd_service_vs vs ON vs.clinic_hd_service_vs_opds_bp=bp.opdscreen_bp_id
+  LEFT JOIN clinic_hd_service_ckd ckd ON ckd.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN clinic_hd_dch_type dch ON dch.clinic_hd_dch_type_id=sv.clinic_hd_dch_type_id
+  LEFT JOIN (
+    SELECT v2.hn,
+      MAX(CASE WHEN n2.billcode='32202' THEN r2.lab_order_result END) AS Creatinine,
+      MAX(CASE WHEN n2.billcode='32403' THEN r2.lab_order_result END) AS albumin,
+      MAX(CASE WHEN n2.billcode='32404' THEN r2.lab_order_result END) AS uf,
+      MAX(CASE WHEN n2.billcode='32405' THEN r2.lab_order_result END) AS hb,
+      MAX(CASE WHEN n2.billcode='32201' THEN r2.lab_order_result END) AS pre_bun,
+      MAX(CASE WHEN n2.billcode='32203' THEN r2.lab_order_result END) AS post_bun,
+      MAX(CASE WHEN n2.billcode='30104' THEN r2.lab_order_result END) AS hct
+    FROM ovst v2
+    LEFT JOIN lab_head h2 ON h2.vn=v2.vn
+    LEFT JOIN lab_order r2 ON r2.lab_order_number=h2.lab_order_number
+    LEFT JOIN lab_items i2 ON i2.lab_items_code=r2.lab_items_code
+    LEFT JOIN nondrugitems n2 ON n2.icode=i2.icode
+    WHERE v2.vstdate >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+    GROUP BY v2.hn
+  ) lab3 ON lab3.hn=v.hn
+  ${where}
+  GROUP BY v.vn`;
+}
+
+async function loadQueueDropdowns(from, to) {
+  if (!APP.apiUrl) return;
+  // โหลด สิทธิรักษา
+  try {
+    const sql = `SELECT DISTINCT p.pttype AS code, p.name FROM clinic_hd_service s INNER JOIN visit_pttype v ON v.vn=s.vn INNER JOIN pttype p ON p.pttype=v.pttype WHERE s.service_date BETWEEN '${from}' AND '${to}' ORDER BY p.name`;
+    const rows = await executeSqlViaApi(sql);
+    const sel = document.getElementById('q-pttype');
+    if (sel) {
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">ทั้งหมด</option>' + rows.map(r => `<option value="${r.code}"${r.code===cur?' selected':''}>${r.name}</option>`).join('');
+    }
+  } catch(e) { /* ไม่มีข้อมูล หรือยังไม่ login */ }
+  // โหลด คลินิก (ไม่ขึ้นกับวันที่)
+  try {
+    const rows = await executeSqlViaApi(`SELECT clinic AS code, name FROM clinic WHERE active_status='Y' ORDER BY name`);
+    const sel = document.getElementById('q-clinic');
+    if (sel) {
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">ทั้งหมด</option>' + rows.map(r => `<option value="${r.code}"${r.code===cur?' selected':''}>${r.name}</option>`).join('');
+    }
+  } catch(e) { /* skip */ }
+}
+
+function initQueueScreen() {
+  const today = todayISO();
+  const f = document.getElementById('q-date-from');
+  const t = document.getElementById('q-date-to');
+  if (f && !f.value) { f.value = today; updateDateLabel('q-date-from'); }
+  if (t && !t.value) { t.value = today; updateDateLabel('q-date-to'); }
+  loadQueueDropdowns(f ? f.value : today, t ? t.value : today);
+  if (APP.apiUrl) searchQueue();
+}
+
+async function searchQueue() {
+  const from  = document.getElementById('q-date-from')?.value || todayISO();
+  const to    = document.getElementById('q-date-to')?.value   || todayISO();
+  const stFilter = document.getElementById('q-status')?.value  || '';
+  const pttype   = document.getElementById('q-pttype')?.value  || '';
+  const clinic   = document.getElementById('q-clinic')?.value  || '';
+
+  const tbl = document.getElementById('queue-table');
+  const sum = document.getElementById('queue-summary');
+  if (tbl) tbl.innerHTML = '<div style="padding:32px;text-align:center;color:#8b99a9;font-size:13.5px;">กำลังโหลดข้อมูล…</div>';
+  if (sum) sum.textContent = '';
+
+  if (!APP.apiUrl) {
+    if (tbl) tbl.innerHTML = '<div style="padding:32px;text-align:center;color:#c9821a;font-size:13.5px;">กรุณาเข้าสู่ระบบก่อนค้นหาข้อมูล</div>';
+    return;
+  }
+
+  // โหลด dropdown สิทธิตามช่วงวันที่
+  loadQueueDropdowns(from, to);
+
+  try {
+    const sql  = buildQueueSQL(from, to, pttype, clinic);
+    const rows = await executeSqlViaApi(sql);
+    queueRows  = rows || [];
+
+    // กรองตามสถานะ
+    let display = queueRows;
+    if (stFilter) display = queueRows.filter(r => computeQueueStatus(r) === stFilter);
+
+    if (sum) sum.textContent = `พบ ${display.length} รายการ (ทั้งหมด ${queueRows.length} รายการ)`;
+    renderQueue(display);
+  } catch(e) {
+    if (tbl) tbl.innerHTML = `<div style="padding:32px;text-align:center;color:#cf3b3b;font-size:13.5px;">เกิดข้อผิดพลาด: ${e.message}</div>`;
+  }
+}
+
+function exportQueueExcel() {
+  if (!queueRows.length) { alert('ไม่มีข้อมูลสำหรับ Export'); return; }
+  const cols = [
+    ['id','ID'],['vn','VN'],['hn','HN'],['cid','เลขบัตรประชาชน'],['ptname','ชื่อ-สกุล'],
+    ['birthday','วันเกิด'],['age','อายุ'],['pttype','สิทธิ'],['onset','วันที่ฟอก'],
+    ['onset_time','เวลาเริ่ม'],['off_time','เวลาสิ้นสุด'],['pre_weight','น้ำหนักก่อน(kg)'],
+    ['pre_bps','SBP ก่อน'],['pre_bpd','DBP ก่อน'],['post_weight','น้ำหนักหลัง(kg)'],
+    ['post_bps','SBP หลัง'],['post_bpd','DBP หลัง'],['height','ส่วนสูง(cm)'],
+    ['creatinine','Creatinine'],['albumin','Albumin'],['ultrafiltration_l','UF(L)'],
+    ['urr','URR'],['ktv','KT/V'],['hb','Hb'],['hct','Hct'],
+    ['membrane','Membrane'],['dialyzer','Dialyzer'],['vascular_access','Vascular Access'],
+    ['cath','Cath'],['spec_cond','Spec Cond'],['patient_type','Patient Type'],
+    ['hd_mode','HD Mode'],['hd_claim','HD Claim(฿)'],['esa_epo','ESA/EPO'],
+    ['iv_iron','IV Iron'],['blood_flow_rate','Blood Flow'],['ultrafiltration_kg','UF(kg)'],
+    ['lowmolheparin','Low Mol Heparin'],['parnutr','Par Nutr'],['lab_xray','Lab/X-ray'],['humanalb','Human Alb'],
+  ];
+  const header = cols.map(c => `"${c[1]}"`).join(',');
+  const body = queueRows.map(r => cols.map(c => `"${(r[c[0]]??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const bom = '﻿';
+  const blob = new Blob([bom + header + '\n' + body], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  const from = document.getElementById('q-date-from')?.value || '';
+  const to   = document.getElementById('q-date-to')?.value   || '';
+  a.href = URL.createObjectURL(blob);
+  a.download = `hd_claim_${from}_${to}.csv`;
+  a.click();
+}
+
+function renderQueue(rows) {
+  const tbl = document.getElementById('queue-table');
+  if (!tbl) return;
+  if (!rows || rows.length === 0) {
+    tbl.innerHTML = '<div style="padding:40px;text-align:center;color:#8b99a9;font-size:13.5px;">ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา</div>';
+    return;
+  }
+  const stMap = {
+    ready:  {label:'พร้อมส่ง',     color:'#1a8a5a',bg:'#e6f4ec'},
+    review: {label:'ยังไม่ยืนยัน', color:'#c9821a',bg:'#fbf1de'},
+  };
+  const fmtN = v => (v != null && v !== '') ? v : '-';
+  const fmtBP = (s,d) => (s||d) ? `${s||'?'}/${d||'?'}` : '-';
+  const fmtNum = (v,dec=1) => (v != null && v !== '') ? parseFloat(v).toFixed(dec) : '-';
+  const COLS = '135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 125px 78px';
+  tbl.innerHTML = rows.map((r,i) => {
+    const st = stMap[computeQueueStatus(r)] || stMap.review;
+    const claim = r.hd_claim ? `฿${parseFloat(r.hd_claim).toLocaleString()}` : '-';
+    const rowBg = i%2===1 ? 'background:#fafbfc;' : '';
+    return `<div style="display:grid;grid-template-columns:${COLS};gap:6px;padding:11px 18px;border-bottom:1px solid #eef1f5;align-items:center;font-size:12.5px;${rowBg}white-space:nowrap;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.cid||''}">${fmtN(r.cid)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#33465c;">${fmtN(r.hn)}</div>
+      <div style="color:#1c2e44;font-weight:500;overflow:hidden;text-overflow:ellipsis;" title="${r.ptname||''}">${fmtN(r.ptname)}</div>
+      <div style="text-align:center;color:#55677d;">${fmtN(r.age)}</div>
+      <div style="font-size:11.5px;color:#6b7a8d;overflow:hidden;text-overflow:ellipsis;" title="${r.pttype||''}">${fmtN(r.pttype)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatThaiDate(r.onset)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatTime(r.onset_time)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatTime(r.off_time)}</div>
+      <div style="text-align:right;color:#1c2e44;">${fmtNum(r.pre_weight)}</div>
+      <div style="text-align:right;color:#1c2e44;">${fmtNum(r.post_weight)}</div>
+      <div style="text-align:center;font-size:11.5px;color:#2f5d97;">${fmtBP(r.pre_bps,r.pre_bpd)}</div>
+      <div style="text-align:center;font-size:11.5px;color:#2f5d97;">${fmtBP(r.post_bps,r.post_bpd)}</div>
+      <div style="text-align:right;color:#55677d;">${fmtNum(r.ultrafiltration_l)}</div>
+      <div style="text-align:right;color:#55677d;">${fmtNum(r.urr)}</div>
+      <div style="text-align:right;color:#55677d;">${fmtNum(r.ktv,2)}</div>
+      <div style="font-weight:600;color:#0d2742;">${claim}</div>
+      <div><span style="background:${st.bg};color:${st.color};font-size:11px;font-weight:600;border-radius:6px;padding:3px 9px;display:inline-block;">${st.label}</span></div>
+      <div style="text-align:right;"><button class="btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="navigate('detail')">ตรวจสอบ</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDetail() {
+  const stMap = {
+    ok:     {label:'จับคู่อัตโนมัติ',color:'#1a8a5a',bg:'#e6f4ec'},
+    review: {label:'ตรวจสอบ',      color:'#c9821a',bg:'#fbf1de'},
+    empty:  {label:'ไม่มีข้อมูล',  color:'#8295a8',bg:'#eef1f5'},
+  };
+  document.getElementById('field-groups').innerHTML = FIELD_GROUPS.map(g => `
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:11px;padding:13px 20px;border-left:5px solid ${g.accent};background:${g.headBg};">
+        <div style="font-size:15px;font-weight:700;color:#1c2e44;">${g.title}</div>
+        <div style="font-size:12px;color:#7587a0;">${g.hint}</div>
+        <div style="flex:1;"></div>
+        <div style="font-size:12px;color:#8b99a9;font-family:'IBM Plex Mono',monospace;">${g.countLabel}</div>
+      </div>
+      <div style="padding:4px 8px 8px;">
+        <div style="display:grid;grid-template-columns:1fr 1.1fr 150px;gap:0;padding:9px 12px 7px;font-size:11.5px;font-weight:600;color:#94a3b4;letter-spacing:.3px;">
+          <div>ฟิลด์ DMIS &amp; HD</div><div>ค่าจาก HIS</div><div>สถานะ</div>
+        </div>
+        ${g.rows.map(f => {
+          const st = stMap[f.st];
+          return `
+            <div style="display:grid;grid-template-columns:1fr 1.1fr 150px;gap:0;padding:10px 12px;border-top:1px solid #f0f3f7;align-items:center;">
+              <div>
+                <div style="font-size:13.5px;color:#1c2e44;font-weight:500;">${f.dmis}</div>
+                <div style="font-size:11px;color:#9aa7b6;font-family:'IBM Plex Mono',monospace;">${f.code}</div>
+              </div>
+              <div style="font-size:13.5px;color:#33465c;">${f.val}</div>
+              <div><span style="background:${st.bg};color:${st.color};font-size:12px;font-weight:600;border-radius:7px;padding:4px 11px;display:inline-block;">${st.label}</span></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderErrors() {
+  document.getElementById('error-list').innerHTML = ERRORS.map(e => `
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:13px;padding:16px 20px;display:flex;align-items:center;gap:18px;border-left:5px solid ${e.sev};">
+      <div style="flex:0 0 auto;min-width:120px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#1c2e44;font-weight:600;">${e.hn}</div>
+        <div style="font-size:13px;color:#54657a;">${e.name}</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;color:#1c2e44;font-weight:600;margin-bottom:3px;">${e.reason}</div>
+        <div style="font-size:12.5px;color:#8b99a9;font-family:'IBM Plex Mono',monospace;">${e.code} · ฟอกวันที่ ${e.date}</div>
+      </div>
+      <span style="background:${e.tagBg};color:${e.tagColor};font-size:12px;font-weight:600;border-radius:7px;padding:5px 12px;white-space:nowrap;">${e.tag}</span>
+      <button class="btn-ghost" style="padding:8px 16px;font-size:13px;">แก้ไข</button>
+    </div>
+  `).join('');
+}
+
+function renderLogs() {
+  document.getElementById('log-table').innerHTML = LOGS.map(l => `
+    <div style="display:grid;grid-template-columns:150px 130px 1.5fr 1fr 120px;gap:10px;padding:13px 20px;border-bottom:1px solid #eef1f5;align-items:center;font-size:13px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${l.time}</div>
+      <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:${l.actorTone};flex:0 0 auto;"></span><span style="color:#33465c;">${l.actor}</span></div>
+      <div style="color:#1c2e44;">${l.action}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${l.target}</div>
+      <div><span style="background:${l.resBg};color:${l.resColor};font-size:12px;font-weight:600;border-radius:7px;padding:3px 11px;">${l.result}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderSettings() {
+  document.getElementById('rules-list').innerHTML = RULES.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #eef1f5;">
+      <div style="font-size:13.5px;color:#33465c;">${r.label}</div>
+      <div style="width:42px;height:24px;border-radius:13px;position:relative;flex:0 0 auto;background:${r.on?'#1a8a5a':'#cdd6e0'};cursor:pointer;" onclick="this.querySelector('span').style.left=(this.querySelector('span').style.left==='21px'?'3px':'21px');this.style.background=(this.querySelector('span').style.left==='21px'?'#1a8a5a':'#cdd6e0');">
+        <span style="position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);left:${r.on?'21px':'3px'};transition:left .15s;"></span>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('mapping-list').innerHTML = MAP_CONFIG.map(m => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eef1f5;font-size:13px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#1d4e89;background:#eef3f8;border-radius:6px;padding:3px 9px;">${m.his}</span>
+      <span style="color:#b9c4d0;">→</span>
+      <span style="flex:1;color:#33465c;">${m.dmis}</span>
+      <span style="font-size:11.5px;color:#1a8a5a;background:#e6f4ec;border-radius:20px;padding:3px 10px;font-weight:600;">เชื่อมแล้ว</span>
+    </div>
+  `).join('');
+}
+
+// ===== CLOCK =====
+function updateTime() {
+  const now = new Date();
+  const d = now.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+  const t = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const el = document.getElementById('current-time');
+  if (el) el.textContent = `${d} · ${t} น.`;
+}
+
+// ===== SYNC =====
+function doSync(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="animation:spin .8s linear infinite;display:inline-block;">⟳</span> กำลังซิงก์...';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+  }, 2000);
+}
+
+// ===== SESSION STATE =====
+const APP = { sessionId: '', apiUrl: '', apiAuthKey: '', userName: '', userLocation: '' };
+const COOKIE_NAME = 'bms-session-id';
+const COOKIE_DAYS = 7;
+
+// ===== COOKIE HELPERS =====
+function setSessionCookie(sid) {
+  const exp = new Date(Date.now() + COOKIE_DAYS * 86400000).toUTCString();
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(sid)};expires=${exp};path=/;SameSite=Lax`;
+}
+function getSessionCookie() {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+function removeSessionCookie() {
+  document.cookie = `${COOKIE_NAME}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+}
+
+// ===== BMS API: RETRIEVE SESSION =====
+// Spec: GET https://hosxp.net/phapi/PasteJSON?Action=GET&code=SESSION_ID
+// Response: { MessageCode: 200|500, result: { key_value: {}, user_info: {} } }
+async function retrieveBmsSession(sid) {
+  const url = `https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sid)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = new Error(`HTTP ${res.status}`);
+    err.type = 'http';
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+// ===== BMS API: EXTRACT CONFIG (hierarchical fallback per spec) =====
+function extractConnectionConfig(data) {
+  const kv   = data?.result?.key_value  || {};
+  const ui   = data?.result?.user_info  || {};
   return {
-    sessionId, apiUrl, apiAuthKey,
-    userName: r.user_info?.name || '—',
-    userLocation: r.user_info?.location || '—',
-    hospitalCode: r.user_info?.hospital_code || ''
+    apiUrl:     kv['hosxp.api_url']      || ui['hosxp.api_url']      || ui.bms_url      || '',
+    apiAuthKey: kv['hosxp.api_auth_key'] || ui['hosxp.api_auth_key'] || ui.bms_session_code || '',
+    userName:   ui.name     || '',
+    userLocation: ui.location || '',
   };
 }
 
-function applySession(s) {
-  session = s;
-  $('userName').textContent = s.userName;
-  $('userLocation').textContent = s.userLocation + (s.hospitalCode ? ' · '+s.hospitalCode : '');
-  $('userInitial').textContent = (s.userName || '·').trim().charAt(0);
-  $('loginOverlay').classList.add('hidden');
-  fetchClinics();
-  loadVerifyMode();
+// ===== BMS API: EXECUTE SQL =====
+// Spec: GET {apiUrl}/api/sql?sql={minifiedSQL}&app=BMS.Dashboard.React
+//       Authorization: Bearer {apiAuthKey}
+async function executeSqlViaApi(sql) {
+  if (!APP.apiUrl || !APP.apiAuthKey) throw new Error('ยังไม่ได้เชื่อมต่อ session');
+  const minified = sql.replace(/--[^\n]*/g, '').replace(/\s+/g, ' ').trim();
+  const url = `${APP.apiUrl}/api/sql?sql=${encodeURIComponent(minified)}&app=BMS.Dashboard.React`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${APP.apiAuthKey}` },
+  });
+  if (res.status === 401) throw Object.assign(new Error('Unauthorized'), { type: 'auth' });
+  if (res.status === 502) throw Object.assign(new Error('Bad Gateway'), { type: 'gateway' });
+  if (!res.ok)            throw Object.assign(new Error(`HTTP ${res.status}`), { type: 'http' });
+  const json = await res.json();
+  if (json.MessageCode !== 200) throw new Error(json.Message || 'Query failed');
+  return json.data;
 }
 
-async function fetchClinics() {
-  if (!session) return;
-  const sql = "SELECT clinic, name FROM clinic WHERE active_status='Y' ORDER BY name";
-  try {
-    const res = await fetch(`${session.apiUrl}/api/sql`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + session.apiAuthKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sql, app: APP_NAME })
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.MessageCode !== 200) return;
-    clinicList = data.data || [];
-  } catch (e) {
-    console.error('[fetchClinics] error', e);
-  }
+// ===== LOGIN UI HELPERS =====
+function toggleShowSession() {
+  const input = document.getElementById('session-input');
+  const btn   = document.getElementById('show-toggle');
+  const hide  = input.type === 'password';
+  input.type  = hide ? 'text' : 'password';
+  btn.textContent = hide ? '🙈' : '👁';
 }
 
-async function loadVerifyMode() {
-  if (!session) return;
-  const sql = "SELECT value FROM sys_var WHERE sys_name='hd_registry_verify_mode'";
-  try {
-    const res = await fetch(`${session.apiUrl}/api/sql`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + session.apiAuthKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sql, app: APP_NAME })
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.MessageCode !== 200) return;
-    const row = (data.data || [])[0];
-    verifyMode = row && row.value === 'Y';
-    const toggle = $('verifyModeToggle');
-    if (toggle) toggle.checked = verifyMode;
-  } catch (e) {
-    console.error('[loadVerifyMode] error', e);
-  }
+function toggleHelp() {
+  const box   = document.getElementById('help-box');
+  const arrow = document.getElementById('help-arrow');
+  const open  = box.style.display === 'none';
+  box.style.display  = open ? 'block' : 'none';
+  arrow.textContent  = open ? '▾' : '▸';
 }
 
-async function saveVerifyMode(enabled) {
-  if (!session) return;
-  const value = enabled ? 'Y' : 'N';
-  const sql = `INSERT INTO sys_var (sys_name, value) VALUES ('hd_registry_verify_mode', '${value}') ON DUPLICATE KEY UPDATE value='${value}'`;
-  try {
-    const res = await fetch(`${session.apiUrl}/api/sql`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + session.apiAuthKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sql, app: APP_NAME })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.MessageCode !== 200) throw new Error(data.Message || 'API error');
-    verifyMode = enabled;
-  } catch (e) {
-    console.error('[saveVerifyMode] error', e);
-    const toggle = $('verifyModeToggle');
-    if (toggle) toggle.checked = verifyMode;
-    alert('บันทึกตั้งค่าไม่สำเร็จ: ' + e.message);
-  }
-}
-
-function renderClinicDropdown(filter) {
-  const dd = $('clinicDropdown');
-  const term = (filter || '').trim().toLowerCase();
-  let items = clinicList;
-  if (term) {
-    items = clinicList.filter(c =>
-      (c.name || '').toLowerCase().includes(term) ||
-      (c.clinic || '').toLowerCase().includes(term)
-    );
-  }
-  dd.innerHTML = '';
-  if (!items.length) {
-    const empty = document.createElement('div');
-    empty.className = 'clinic-dropdown-item text-slate-400';
-    empty.textContent = 'ไม่พบคลินิก';
-    dd.appendChild(empty);
+function showLoginError(msg, type = 'error') {
+  const el = document.getElementById('login-error');
+  if (type === 'warn') {
+    el.style.background = '#fbf1de'; el.style.border = '1px solid #e8c97a'; el.style.color = '#7a5510';
   } else {
-    items.forEach(c => {
-      const div = document.createElement('div');
-      div.className = 'clinic-dropdown-item';
-      div.dataset.code = c.clinic || '';
-      div.dataset.name = c.name || c.clinic || '';
-      div.textContent = c.name || c.clinic || '';
-      if (c.clinic) {
-        const span = document.createElement('span');
-        span.className = 'text-slate-400 text-xs ml-1';
-        span.textContent = '(' + c.clinic + ')';
-        div.appendChild(span);
-      }
-      div.addEventListener('mousedown', e => {
-        e.preventDefault();
-        const inp = $('filterClinic');
-        inp.value = div.dataset.name;
-        inp.dataset.code = div.dataset.code;
-        dd.classList.add('hidden');
-        fetchData();
-      });
-      dd.appendChild(div);
-    });
+    el.style.background = '#fbe9e9'; el.style.border = '1px solid #f1c9c9'; el.style.color = '#8a2a2a';
   }
-  dd.classList.remove('hidden');
+  el.innerHTML = msg;
+  el.style.display = 'block';
 }
 
-function hideClinicDropdown() {
-  $('clinicDropdown').classList.add('hidden');
-}
+// ===== LOGIN =====
+async function doLogin() {
+  const input = document.getElementById('session-input');
+  const btn   = document.getElementById('login-btn');
+  const sid   = input.value.trim();
 
-function logout() {
-  session = null;
-  allRows = [];
-  clearAnyCachedSession();
-  $('loginSessionId').value = '';
-  $('loginOverlay').classList.remove('hidden');
-}
+  if (!sid) { showLoginError('กรุณากรอก Session ID'); input.focus(); return; }
 
-// One-shot auto verify ONLY from URL parameter — never from cookie/localStorage.
-// The session is kept only in memory; refreshing the page returns to the login screen.
-async function tryAutoLogin() {
-  const urlSid = new URLSearchParams(location.search).get('bms-session-id');
-  if (!urlSid) return false;
+  const origText = btn.textContent;
+  btn.innerHTML = '<span style="animation:spin .7s linear infinite;display:inline-block;margin-right:6px;">⟳</span>กำลังตรวจสอบ...';
+  btn.disabled  = true;
+  document.getElementById('login-error').style.display = 'none';
+
   try {
-    const s = await verifySession(urlSid);
-    const url = new URL(location.href); url.searchParams.delete('bms-session-id');
-    history.replaceState(null, '', url.toString());
-    applySession(s);
+    const data = await retrieveBmsSession(sid);
+
+    if (data.MessageCode === 500) {
+      throw Object.assign(new Error('expired'), { type: 'expired' });
+    }
+    if (data.MessageCode !== 200) {
+      throw Object.assign(new Error('invalid'), { type: 'invalid' });
+    }
+
+    const cfg = extractConnectionConfig(data);
+    if (!cfg.apiUrl) {
+      throw Object.assign(new Error('no-config'), { type: 'invalid' });
+    }
+
+    // Persist: cookie (7 days) + in-memory
+    setSessionCookie(sid);
+    APP.sessionId    = sid;
+    APP.apiUrl       = cfg.apiUrl;
+    APP.apiAuthKey   = cfg.apiAuthKey;
+    APP.userName     = cfg.userName;
+    APP.userLocation = cfg.userLocation;
+
+    showApp();
+
+  } catch (err) {
+    btn.textContent = origText;
+    btn.disabled    = false;
+
+    if (err.type === 'expired') {
+      showLoginError('Session หมดอายุแล้ว กรุณาล็อกอิน HOSxP ใหม่แล้วคัดลอก Session ID มาวางอีกครั้ง');
+    } else if (err.type === 'invalid') {
+      showLoginError('Session ID ไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่');
+    } else if (err instanceof TypeError) {
+      showLoginError(
+        '⚠️ เชื่อมต่อ <b>hosxp.net</b> ไม่ได้ — อาจเกิดจาก:<br>' +
+        '&nbsp;&nbsp;• เครือข่ายขัดข้อง หรือปิดการเชื่อมต่ออินเทอร์เน็ต<br>' +
+        '&nbsp;&nbsp;• Browser บล็อก CORS (เปิดผ่าน local server แทน file://)<br>' +
+        '&nbsp;&nbsp;• ระบบ HOSxP ชั่วคราวไม่พร้อมให้บริการ', 'warn'
+      );
+    } else if (err.type === 'http') {
+      showLoginError(`เซิร์ฟเวอร์ตอบกลับ HTTP ${err.status} — กรุณาลองใหม่ภายหลัง`);
+    } else {
+      showLoginError('เกิดข้อผิดพลาดที่ไม่คาดคิด: ' + err.message);
+    }
+  }
+}
+
+// ===== LOGOUT =====
+function doLogout() {
+  if (!confirm('ต้องการออกจากระบบ?')) return;
+  removeSessionCookie();
+  Object.assign(APP, { sessionId:'', apiUrl:'', apiAuthKey:'', userName:'', userLocation:'' });
+  document.getElementById('session-input').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ===== SHOW APP =====
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  // Update sidebar user info
+  const nameEl = document.getElementById('user-name');
+  if (nameEl) {
+    nameEl.textContent = APP.userName
+      ? `${APP.userName}${APP.userLocation ? ' · ' + APP.userLocation : ''}`
+      : 'Session ใช้งานอยู่';
+  }
+
+  initApp();
+}
+
+// ===== RESTORE SESSION FROM COOKIE =====
+async function tryRestoreSession() {
+  const sid = getSessionCookie();
+  if (!sid) return false;
+
+  // Show loading state on login screen while verifying
+  const btn = document.getElementById('login-btn');
+  if (btn) {
+    btn.innerHTML = '<span style="animation:spin .7s linear infinite;display:inline-block;margin-right:6px;">⟳</span>กำลังตรวจสอบ session...';
+    btn.disabled = true;
+  }
+
+  try {
+    const data = await retrieveBmsSession(sid);
+    if (data.MessageCode !== 200) {
+      removeSessionCookie();
+      if (btn) { btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false; }
+      return false;
+    }
+    const cfg = extractConnectionConfig(data);
+    if (!cfg.apiUrl) {
+      removeSessionCookie();
+      if (btn) { btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false; }
+      return false;
+    }
+    APP.sessionId    = sid;
+    APP.apiUrl       = cfg.apiUrl;
+    APP.apiAuthKey   = cfg.apiAuthKey;
+    APP.userName     = cfg.userName;
+    APP.userLocation = cfg.userLocation;
+    showApp();
     return true;
-  } catch (e) {
-    showLoginError(e.message);
+  } catch {
+    if (btn) { btn.textContent = 'เข้าสู่ระบบ'; btn.disabled = false; }
     return false;
   }
 }
 
-async function manualLogin() {
-  const sid = $('loginSessionId').value.trim();
-  if (!sid) { showLoginError('กรุณากรอก Session ID'); return; }
-  $('btnLogin').disabled = true;
-  $('btnLogin').innerHTML = '<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังตรวจสอบ...';
-  try {
-    const s = await verifySession(sid);
-    applySession(s);
-    fetchData();
-  } catch (e) {
-    showLoginError(e.message);
-  } finally {
-    $('btnLogin').disabled = false;
-    $('btnLogin').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> เข้าสู่ระบบ';
-  }
+// ===== THEMES =====
+const THEMES = {
+  navy: {
+    name: 'Navy (ค่าเริ่มต้น)',
+    preview: ['#0d2742','#f0871f','#e9edf2'],
+    // สีขาวอมส้มบน sidebar น้ำเงินเข้ม
+    logoFilter: 'brightness(0) invert(1) sepia(1) saturate(2) hue-rotate(355deg) brightness(1.1)',
+    vars: {
+      '--sidebar-bg':'#0d2742','--sidebar-text':'#aebccd','--sidebar-text-dim':'#62788f',
+      '--sidebar-user-bg':'#1d3e60','--accent':'#f0871f','--accent-dim':'rgba(240,135,31,.16)',
+      '--page-bg':'#e9edf2','--topbar-btn-bg':'#0d2742','--topbar-btn-hover':'#16395f',
+    },
+  },
+  dark: {
+    name: 'Dark Mode',
+    preview: ['#1a1a2e','#e94560','#0f0f23'],
+    // สีขาวอมแดงบน sidebar ดำ
+    logoFilter: 'brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(310deg) brightness(1.2)',
+    vars: {
+      '--sidebar-bg':'#1a1a2e','--sidebar-text':'#8892b0','--sidebar-text-dim':'#4a5568',
+      '--sidebar-user-bg':'#16213e','--accent':'#e94560','--accent-dim':'rgba(233,69,96,.18)',
+      '--page-bg':'#0f0f23','--topbar-btn-bg':'#16213e','--topbar-btn-hover':'#0f3460',
+    },
+  },
+  green: {
+    name: 'เขียวมรกต',
+    preview: ['#0d3b2b','#10b981','#eaf5f0'],
+    // สีขาวอมเขียวบน sidebar เขียวเข้ม
+    logoFilter: 'brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(110deg) brightness(1.1)',
+    vars: {
+      '--sidebar-bg':'#0d3b2b','--sidebar-text':'#86c9ab','--sidebar-text-dim':'#4a8a6a',
+      '--sidebar-user-bg':'#0a5240','--accent':'#10b981','--accent-dim':'rgba(16,185,129,.16)',
+      '--page-bg':'#eaf5f0','--topbar-btn-bg':'#0d3b2b','--topbar-btn-hover':'#0a5240',
+    },
+  },
+  purple: {
+    name: 'ม่วงคลาสสิก',
+    preview: ['#2d1b69','#7c3aed','#f0edf8'],
+    // สีขาวอมม่วงบน sidebar ม่วงเข้ม
+    logoFilter: 'brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(240deg) brightness(1.2)',
+    vars: {
+      '--sidebar-bg':'#2d1b69','--sidebar-text':'#b4a7d6','--sidebar-text-dim':'#7c6faa',
+      '--sidebar-user-bg':'#3d2b7a','--accent':'#7c3aed','--accent-dim':'rgba(124,58,237,.16)',
+      '--page-bg':'#f0edf8','--topbar-btn-bg':'#2d1b69','--topbar-btn-hover':'#3d2b7a',
+    },
+  },
+  coffee: {
+    name: 'กาแฟน้ำตาลอบอุ่น',
+    preview: ['#2c1a0e','#c8860a','#f5efe6'],
+    // สีครีมอำพันบน sidebar น้ำตาลเข้ม
+    logoFilter: 'brightness(0) invert(1) sepia(1) saturate(2) hue-rotate(20deg) brightness(1.1)',
+    vars: {
+      '--sidebar-bg':'#2c1a0e','--sidebar-text':'#c9a882','--sidebar-text-dim':'#7d5c3a',
+      '--sidebar-user-bg':'#3e2410','--accent':'#c8860a','--accent-dim':'rgba(200,134,10,.16)',
+      '--page-bg':'#f5efe6','--topbar-btn-bg':'#2c1a0e','--topbar-btn-hover':'#3e2410',
+    },
+  },
+};
+
+let currentTheme = localStorage.getItem('ac_theme') || 'navy';
+let currentFontSize = localStorage.getItem('ac_fontsize') || 'normal';
+
+function applyTheme(key) {
+  const t = THEMES[key];
+  if (!t) return;
+  currentTheme = key;
+  localStorage.setItem('ac_theme', key);
+  const root = document.documentElement;
+  Object.entries(t.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Update sidebar bg directly (inline style takes precedence over :root without !important on element)
+  const sidebar = document.getElementById('app-sidebar');
+  if (sidebar) sidebar.style.background = t.vars['--sidebar-bg'];
+  // Update page bg
+  document.body.style.background = t.vars['--page-bg'];
+  // Update dark-mode dependent elements
+  const mainContent = document.querySelector('#app > div:last-child');
+  if (mainContent) mainContent.style.background = t.vars['--page-bg'];
+  // Apply color filter to sidebar logo so it remains visible on any dark sidebar
+  const sidebarLogo = document.getElementById('sidebar-logo-img');
+  if (sidebarLogo) sidebarLogo.style.filter = t.logoFilter || '';
+  updateThemeCards();
 }
 
-function showLoginError(msg) {
-  $('loginError').classList.remove('hidden');
-  $('loginError').textContent = msg;
+function setFontSize(size) {
+  currentFontSize = size;
+  localStorage.setItem('ac_fontsize', size);
+  const map = { small: '13px', normal: '16px', large: '18px' };
+  document.documentElement.style.fontSize = map[size] || '16px';
+  updateFontSizeBtns();
 }
 
-// ===== SQL =====
-function buildSQL(dateFrom, dateTo, clinic, readyOnly) {
-  const clinicFilter = clinic ? `AND c.clinic='${clinic}'` : '';
-  const readyFilter = readyOnly ? "AND sv.clinic_hd_dch_type_id='1'" : '';
-  return `
-SELECT
-MAX(sv.clinic_hd_service_id) AS id,
-v.vn,
-MAX(p.cid) AS cid,
-MAX(v.hn) AS hn,
-MAX(CONCAT(p.pname,p.fname,' ',p.lname)) AS ptname,
-MAX(p.birthday) AS birthday,
-MAX(st.age_y) AS age,
-MAX(pe.name) AS pttype,
-MAX(pe.hipdata_code) AS hipdata,
-'' AS date_hd,
-MAX(sv.service_date) AS onset,
-MAX(sv.service_time) AS onset_time,
-MAX(sv.session_off_time) AS off_time,
-MAX(sv.weight_pre_kgs) AS pre_weight,
-MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bps END) AS pre_bps,
-MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='1' THEN bp.bpd END) AS pre_bpd,
-MAX(sv.weight_post_kgs) AS post_weight,
-MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bps END) AS post_bps,
-MAX(CASE WHEN vs.clinic_hd_service_vs_type_id='3' THEN bp.bpd END) AS post_bpd,
-MAX(s.height) AS height,
-MAX(lab3.Creatinine) AS creatinine,
-MAX(lab3.albumin) AS albumin,
-MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
-MAX(ROUND(((lab3.pre_bun - lab3.post_bun) / NULLIF(lab3.pre_bun * 1.0, 0)) * 100,2)) AS urr,
-MAX(ROUND(((lab3.pre_bun - lab3.post_bun) * 4) / NULLIF(CASE WHEN p.sex='1' THEN sv.weight_post_kgs*0.6 WHEN p.sex='2' THEN sv.weight_post_kgs*0.45 ELSE NULL END,0),2)) AS ktv,
-MAX(lab3.hb) AS hb,
-MAX((SELECT r.lab_order_result FROM lab_head h JOIN lab_order r ON r.lab_order_number=h.lab_order_number JOIN lab_items i ON i.lab_items_code=r.lab_items_code JOIN nondrugitems n ON n.icode=i.icode WHERE h.vn=sv.vn AND n.billcode='32201' LIMIT 1)) AS pre_dialysis_bun,
-MAX((SELECT r.lab_order_result FROM lab_head h JOIN lab_order r ON r.lab_order_number=h.lab_order_number JOIN lab_items i ON i.lab_items_code=r.lab_items_code JOIN nondrugitems n ON n.icode=i.icode WHERE h.vn=sv.vn AND n.billcode='32203' LIMIT 1)) AS post_dialysis_bun,
-(SELECT SUM(o.sum_price) FROM opitemrece o WHERE o.vn=v.vn AND o.income IN ('06')) AS blood_flow,
-MAX(m.clinic_hd_machine_name) AS membrane,
-MAX(di.clinic_hd_dialyzer_name) AS dialyzer,
-MAX(CASE WHEN ckd.clinic_hd_asm_va_type_id='1' THEN 'shunt' ELSE 'graft' END) AS vascular_access,
-MAX(CASE WHEN ckd.clinic_hd_asm_catheter_type='DLC' THEN 'temp cath' ELSE 'pem cath' END) AS cath,
-MAX(CASE WHEN sv.clinic_hd_dch_type_id='1' THEN 'Complete' WHEN sv.clinic_hd_dch_type_id='2' THEN 'Unstable' WHEN sv.clinic_hd_dch_type_id='3' THEN 'Hemofiltration' WHEN sv.clinic_hd_dch_type_id='4' THEN 'Initial' ELSE NULL END) AS spec_cond,
-MAX(CASE WHEN v.an<>'' THEN 'IPD' ELSE 'OPD' END) AS patient_type,
-'' AS new_dialyze,
-'Chronic' AS hd_mode,
-MAX(lab3.hct) AS hct,
-(SELECT SUM(o.sum_price) FROM opitemrece o JOIN nondrugitems n ON o.icode=n.icode WHERE o.vn=v.vn AND n.billcode IN ('71641','71640')) AS hd_claim,
-(SELECT GROUP_CONCAT(DISTINCT med.clinic_hd_med_type_name SEPARATOR '\\n') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_type med ON med.clinic_hd_med_type_id=md.clinic_hd_med_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS esa_epo,
-(SELECT GROUP_CONCAT(DISTINCT md.qty SEPARATOR '\\n') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_route_type r ON r.clinic_hd_med_route_type_id=md.clinic_hd_med_route_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS qty,
-(SELECT GROUP_CONCAT(DISTINCT r.clinic_hd_med_route_type_name SEPARATOR '\\n') FROM clinic_hd_service_med_list md INNER JOIN clinic_hd_med_route_type r ON r.clinic_hd_med_route_type_id=md.clinic_hd_med_route_type_id WHERE md.clinic_hd_service_id=MAX(sv.clinic_hd_service_id)) AS route,
-(SELECT SUM(o.sum_price) FROM opitemrece o JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN ('755043')) AS iv_iron,
-MAX(pcr.clinic_hd_service_pcr_vol) AS blood_flow_rate,
-MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
-(SELECT SUM(o.sum_price) FROM opitemrece o JOIN drugitems d2 ON o.icode=d2.icode WHERE o.vn=v.vn AND d2.sks_drug_code IN ('107134','107110')) AS lowmolheparin,
-'' AS dbllumen,
-(SELECT SUM(o2.sum_price) FROM opitemrece o2 INNER JOIN nondrugitems nn ON nn.icode=o2.icode WHERE o2.vn=v.vn AND nn.billcode='55820') AS parnutr,
-(SELECT SUM(o1.sum_price) FROM opitemrece o1 WHERE o1.vn=v.vn AND o1.income IN ('07','08')) AS lab_xray,
-(SELECT SUM(o3.sum_price) FROM opitemrece o3 INNER JOIN nondrugitems n ON n.icode=o3.icode WHERE o3.vn=v.vn AND n.billcode='34116') AS humanalb
-FROM clinic_hd_service sv
-LEFT JOIN ovst v ON sv.vn=v.vn
-INNER JOIN vn_stat st ON st.vn=v.vn
-INNER JOIN opdscreen s ON s.vn=v.vn
-LEFT JOIN opdscreen_bp bp ON bp.vn=v.vn
-INNER JOIN patient p ON p.hn=v.hn
-INNER JOIN visit_pttype vp ON vp.vn=v.vn
-INNER JOIN pttype pe ON pe.pttype=vp.pttype
-INNER JOIN clinicmember c ON c.hn=v.hn
-INNER JOIN clinic cc ON cc.clinic=c.clinic
-LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
-LEFT JOIN clinic_hd_machine m ON m.clinic_hd_machine_id=sv.clinic_hd_machine_id
-LEFT JOIN clinic_hd_vss_type vas ON vas.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
-LEFT JOIN clinic_hd_service_pcr pcr ON pcr.clinic_hd_service_id=sv.clinic_hd_service_id
-LEFT JOIN clinic_hd_service_vs vs ON vs.clinic_hd_service_vs_opds_bp=bp.opdscreen_bp_id
-LEFT JOIN clinic_hd_service_ckd ckd ON ckd.clinic_hd_service_id=sv.clinic_hd_service_id
-LEFT JOIN clinic_hd_dch_type dch ON dch.clinic_hd_dch_type_id=sv.clinic_hd_dch_type_id
-LEFT JOIN (
-  SELECT v2.hn,
-    MAX(CASE WHEN n2.billcode='32202' THEN r2.lab_order_result END) AS Creatinine,
-    MAX(CASE WHEN n2.billcode='32403' THEN r2.lab_order_result END) AS albumin,
-    MAX(CASE WHEN n2.billcode='32404' THEN r2.lab_order_result END) AS uf,
-    MAX(CASE WHEN n2.billcode='32405' THEN r2.lab_order_result END) AS hb,
-    MAX(CASE WHEN n2.billcode='32201' THEN r2.lab_order_result END) AS pre_bun,
-    MAX(CASE WHEN n2.billcode='32203' THEN r2.lab_order_result END) AS post_bun,
-    MAX(CASE WHEN n2.billcode='30104' THEN r2.lab_order_result END) AS hct
-  FROM ovst v2
-  LEFT JOIN lab_head h2 ON h2.vn=v2.vn
-  LEFT JOIN lab_order r2 ON r2.lab_order_number=h2.lab_order_number
-  LEFT JOIN lab_items i2 ON i2.lab_items_code=r2.lab_items_code
-  LEFT JOIN nondrugitems n2 ON n2.icode=i2.icode
-  WHERE v2.vstdate >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-  GROUP BY v2.hn
-) lab3 ON lab3.hn = v.hn
-LEFT JOIN lab_head h ON h.vn=v.vn
-LEFT JOIN lab_order r ON r.lab_order_number=h.lab_order_number
-LEFT JOIN lab_items i ON i.lab_items_code=r.lab_items_code
-LEFT JOIN nondrugitems n ON n.icode=i.icode
-WHERE v.vstdate BETWEEN '${dateFrom}' AND '${dateTo}'
-${clinicFilter}
-${readyFilter}
-GROUP BY v.vn
-ORDER BY MAX(sv.service_date) DESC, MAX(sv.service_time) DESC
-`.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').trim();
+function updateThemeCards() {
+  document.querySelectorAll('.theme-card').forEach(card => {
+    const active = card.dataset.theme === currentTheme;
+    card.style.border = active ? `2px solid var(--accent)` : '2px solid #e4e9f0';
+    card.style.boxShadow = active ? '0 0 0 3px rgba(0,0,0,.08)' : 'none';
+    const check = card.querySelector('.theme-check');
+    if (check) check.style.display = active ? 'flex' : 'none';
+  });
 }
 
-async function fetchPttypeOptions(dateFrom, dateTo) {
-  if (!session) return [];
-  const sql = `SELECT DISTINCT p.name FROM clinic_hd_service s INNER JOIN ovst v ON v.vn=s.vn INNER JOIN pttype p ON p.pttype=v.pttype WHERE v.vstdate BETWEEN '${dateFrom}' AND '${dateTo}' ORDER BY p.name`.replace(/\s+/g,' ');
-  try {
-    const res = await fetch(`${session.apiUrl}/api/sql`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + session.apiAuthKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sql, app: APP_NAME })
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (data.MessageCode !== 200) return [];
-    return (data.data || []).map(r => r.name).filter(Boolean);
-  } catch (e) {
-    console.error('[fetchPttypeOptions] error', e);
-    return [];
-  }
+function updateFontSizeBtns() {
+  document.querySelectorAll('#font-size-btns button').forEach(btn => {
+    const active = btn.dataset.fs === currentFontSize;
+    btn.style.border      = active ? '2px solid var(--accent)' : '2px solid #e4e9f0';
+    btn.style.fontWeight  = active ? '700' : '400';
+    btn.style.color       = active ? '#0d2742' : '#54657a';
+    btn.style.background  = active ? '#f8f9fb' : '#fff';
+  });
 }
 
-async function fetchData() {
-  if (!session) { $('loginOverlay').classList.remove('hidden'); return; }
-  const dateFrom = $('dateFrom').value, dateTo = $('dateTo').value;
-  if (!dateFrom || !dateTo) { alert('กรุณาเลือกวันที่'); return; }
-
-  setLoading(true);
-  $('connStatus').textContent = 'กำลังโหลด...';
-  $('statusDot').classList.remove('off');
-
-  const clinic = $('filterClinic').dataset.code || '';
-  const readyOnly = $('filterReady').checked;
-  const sql = buildSQL(dateFrom, dateTo, clinic, readyOnly);
-  // Use POST + JSON body — full SQL exceeds nginx URL length limit (~8 KB) and yields 414
-  try {
-    const res = await fetch(`${session.apiUrl}/api/sql`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + session.apiAuthKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ sql, app: APP_NAME })
-    });
-    if (res.status === 401) throw new Error('Auth Key หมดอายุ กรุณา login ใหม่');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.MessageCode !== 200) throw new Error(data.Message || 'API error');
-    allRows = data.data || [];
-    const pttypeNames = await fetchPttypeOptions(dateFrom, dateTo);
-    refreshPttypeOptions(pttypeNames);
-    renderAll();
-    $('lastUpdated').textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH');
-    $('connStatus').textContent = 'Online';
-  } catch (e) {
-    $('connStatus').textContent = 'ผิดพลาด';
-    $('statusDot').classList.add('off');
-    $('tableBody').innerHTML = `<tr><td colspan="16" class="px-6 py-12 text-center">
-      <div class="inline-flex flex-col items-center gap-2 text-rose-600">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div class="font-medium">โหลดข้อมูลไม่สำเร็จ</div>
-        <div class="text-xs text-slate-500">${escapeHtml(e.message)}</div>
-        <div class="text-xs text-slate-400 mt-2">หาก browser แจ้ง CORS ให้เปิดผ่าน local server หรือใช้ extension</div>
-      </div></td></tr>`;
-    if (/หมดอายุ|401/.test(e.message)) setTimeout(logout, 1500);
-  } finally {
-    setLoading(false);
-  }
+function renderDisplay() {
+  document.getElementById('theme-cards').innerHTML = Object.entries(THEMES).map(([key, t]) => `
+    <div class="theme-card" data-theme="${key}" onclick="applyTheme('${key}')"
+      style="border:2px solid #e4e9f0;border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative;">
+      <!-- preview bar -->
+      <div style="display:flex;height:52px;">
+        <div style="width:38%;background:${t.preview[0]};"></div>
+        <div style="flex:1;background:${t.preview[2]};display:flex;align-items:flex-end;padding:6px;">
+          <div style="width:60%;height:8px;border-radius:4px;background:${t.preview[1]};opacity:.7;"></div>
+        </div>
+      </div>
+      <!-- label -->
+      <div style="padding:10px 12px;background:#fff;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:13px;font-weight:600;color:#1c2e44;">${t.name}</span>
+        <span class="theme-check" style="display:none;width:20px;height:20px;border-radius:50%;background:var(--accent);align-items:center;justify-content:center;font-size:11px;color:#fff;">✓</span>
+      </div>
+    </div>
+  `).join('');
+  updateThemeCards();
+  updateFontSizeBtns();
 }
 
-function setLoading(b) {
-  $('btnRefresh').disabled = b;
-  if (b) {
-    $('tableBody').innerHTML = Array.from({length:5}).map(()=>`
-      <tr>${Array.from({length:16}).map(()=>`<td class="px-3 py-3"><div class="skeleton h-4 rounded"></div></td>`).join('')}</tr>
-    `).join('');
-  }
+// ===== INIT =====
+function initApp() {
+  renderNav();
+  renderDashboard();
+  renderQueue();
+  renderDetail();
+  renderErrors();
+  renderLogs();
+  renderSettings();
+  renderDisplay();
+  navigate('dashboard');
+  updateTime();
+  setInterval(updateTime, 30000);
+  // Restore saved theme & font size
+  applyTheme(currentTheme);
+  setFontSize(currentFontSize);
 }
 
-function refreshPttypeOptions(names) {
-  const sel = $('filterPttype');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— ทุกสิทธิ —</option>' +
-    (names || []).sort().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-  sel.value = cur;
-}
+// ===== BOOT =====
+window.addEventListener('DOMContentLoaded', async () => {
+  updateTime();
 
-function getFilteredRows() {
-  const search = $('searchInput').value.trim().toLowerCase();
-  const pttype = $('filterPttype').value;
-  let rows = allRows.slice();
-  if (search) rows = rows.filter(r =>
-    (r.hn||'').toLowerCase().includes(search) ||
-    (r.ptname||'').toLowerCase().includes(search) ||
-    (r.cid||'').toLowerCase().includes(search)
-  );
-  if (pttype) rows = rows.filter(r => r.pttype === pttype);
-  return rows;
-}
-
-function renderAll() {
-  const rows = getFilteredRows();
-  renderStats(rows);
-  renderTable(rows);
-  $('recordCount').textContent = `${rows.length} รายการ`;
-  const search = $('searchInput').value.trim();
-  const pttype = $('filterPttype').value;
-  const clinic = $('filterClinic').dataset.code || '';
-  const readyOnly = $('filterReady').checked;
-  const clinicName = clinic ? (clinicList.find(c => c.clinic === clinic)?.name || clinic) : '';
-  $('filterSummary').textContent =
-    `${$('dateFrom').value} → ${$('dateTo').value}` +
-    (clinicName ? ` · ${clinicName}` : '') +
-    (pttype ? ` · ${pttype}` : '') +
-    (search ? ` · ค้นหา "${search}"` : '') +
-    (readyOnly ? ' · พร้อมส่ง' : '');
-}
-
-function renderStats(rows) {
-  const sessions = rows.length;
-  const pts = new Set(rows.map(r => r.hn).filter(Boolean));
-  const patients = pts.size;
-  const ufs = rows.map(r => parseFloat(r.ultrafiltration_l)).filter(v => !isNaN(v));
-  const ufAvg = ufs.length ? ufs.reduce((a,b)=>a+b,0)/ufs.length : 0;
-  const claim = rows.map(r => parseFloat(r.hd_claim)||0).reduce((a,b)=>a+b,0);
-
-  // Update main numbers
-  $('statSessions').textContent = sessions.toLocaleString();
-  $('statPatients').textContent = patients.toLocaleString();
-  $('statUfAvg').textContent = ufAvg.toFixed(2);
-  $('statClaim').textContent = claim.toLocaleString('th-TH', {maximumFractionDigits:0});
-
-  // Update last updated time
-  const now = new Date();
-  $('statsLastUpdated').textContent = now.toLocaleString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-  // Progress bars
-  const sessionsTarget = 4;
-  $('statSessionsBar').style.width = Math.min((sessions / sessionsTarget) * 100, 100) + '%';
-  $('statPatientsBar').style.width = patients > 0 ? '100%' : '0%';
-  const ufTarget = 2.5;
-  $('statUfBar').style.width = Math.min((ufAvg / ufTarget) * 100, 100) + '%';
-  const claimTarget = sessions * 2000;
-  $('statClaimBar').style.width = claimTarget > 0 ? Math.min((claim / claimTarget) * 100, 100) + '%' : '0%';
-
-  // Trends (compare with previous stats)
-  if (previousStats) {
-    const sDiff = sessions - previousStats.sessions;
-    if (sDiff > 0) {
-      $('statSessionsTrend').textContent = '▲ +' + sDiff + ' จากเมื่อวาน';
-      $('statSessionsTrend').className = 'text-[11px] text-emerald-600 font-medium';
-    } else if (sDiff < 0) {
-      $('statSessionsTrend').textContent = '▼ ' + sDiff + ' จากเมื่อวาน';
-      $('statSessionsTrend').className = 'text-[11px] text-rose-500 font-medium';
-    } else {
-      $('statSessionsTrend').textContent = '— เท่าเดิม';
-      $('statSessionsTrend').className = 'text-[11px] text-slate-500 font-medium';
-    }
-
-    const pDiff = patients - previousStats.patients;
-    if (pDiff > 0) {
-      $('statPatientsTrend').textContent = '▲ +' + pDiff;
-      $('statPatientsTrend').className = 'text-[11px] text-emerald-600 font-medium';
-    } else if (pDiff < 0) {
-      $('statPatientsTrend').textContent = '▼ ' + pDiff;
-      $('statPatientsTrend').className = 'text-[11px] text-rose-500 font-medium';
-    } else {
-      $('statPatientsTrend').textContent = '— เท่าเดิม';
-      $('statPatientsTrend').className = 'text-[11px] text-slate-500 font-medium';
-    }
-
-    const ufDiff = ufAvg - previousStats.ufAvg;
-    if (ufDiff > 0.01) {
-      $('statUfTrend').textContent = '▲ +' + ufDiff.toFixed(2) + 'L';
-      $('statUfTrend').className = 'text-[11px] text-emerald-600 font-medium';
-    } else if (ufDiff < -0.01) {
-      $('statUfTrend').textContent = '▼ ' + ufDiff.toFixed(2) + 'L';
-      $('statUfTrend').className = 'text-[11px] text-rose-500 font-medium';
-    } else {
-      $('statUfTrend').textContent = '— เท่าเดิม';
-      $('statUfTrend').className = 'text-[11px] text-slate-500 font-medium';
-    }
-
-    if (claim > 0 && previousStats.claim > 0) {
-      const cDiff = claim - previousStats.claim;
-      if (cDiff > 0) {
-        $('statClaimTrend').textContent = '▲ +' + cDiff.toLocaleString('th-TH', {maximumFractionDigits:0}) + '฿';
-        $('statClaimTrend').className = 'text-[11px] text-emerald-600 font-medium';
-      } else if (cDiff < 0) {
-        $('statClaimTrend').textContent = '▼ ' + cDiff.toLocaleString('th-TH', {maximumFractionDigits:0}) + '฿';
-        $('statClaimTrend').className = 'text-[11px] text-rose-500 font-medium';
-      } else {
-        $('statClaimTrend').textContent = '— เท่าเดิม';
-        $('statClaimTrend').className = 'text-[11px] text-slate-500 font-medium';
-      }
-    } else if (claim > 0) {
-      $('statClaimTrend').textContent = '▲ เบิกจ่ายแล้ว 100%';
-      $('statClaimTrend').className = 'text-[11px] text-emerald-600 font-medium';
-    } else {
-      $('statClaimTrend').textContent = '—';
-      $('statClaimTrend').className = 'text-[11px] text-slate-500 font-medium';
-    }
-  } else {
-    // First load - show neutral trends
-    $('statSessionsTrend').textContent = '—';
-    $('statSessionsTrend').className = 'text-[11px] text-slate-500 font-medium';
-    $('statPatientsTrend').textContent = '— เท่าเดิม';
-    $('statPatientsTrend').className = 'text-[11px] text-slate-500 font-medium';
-    $('statUfTrend').textContent = '—';
-    $('statUfTrend').className = 'text-[11px] text-slate-500 font-medium';
-    $('statClaimTrend').textContent = '—';
-    $('statClaimTrend').className = 'text-[11px] text-slate-500 font-medium';
-  }
-
-  // Sub labels
-  $('statPatientsTotal').textContent = 'ทั้งหมด ' + patients + ' คน';
-  $('statClaimPerSession').textContent = sessions > 0
-    ? Math.round(claim / sessions).toLocaleString('th-TH') + '฿ / ครั้ง'
-    : '0฿ / ครั้ง';
-
-  // Store current stats for next comparison
-  previousStats = { sessions, patients, ufAvg, claim };
-}
-
-function renderTable(rows) {
-  const tbody = $('tableBody');
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="16" class="px-6 py-16 text-center text-slate-400">
-      <div class="flex flex-col items-center gap-2">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="text-slate-300"><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="8"/></svg>
-        <div class="font-medium text-slate-500">ไม่พบข้อมูล</div>
-        <div class="text-xs">ลองปรับช่วงวันที่หรือสิทธิรักษา</div>
-      </div></td></tr>`;
+  // 1. URL param → login immediately (one-shot link)
+  const params  = new URLSearchParams(location.search);
+  const sidParam = params.get('bms-session-id');
+  if (sidParam) {
+    history.replaceState({}, '', location.pathname);
+    setSessionCookie(sidParam);                    // store in cookie
+    document.getElementById('session-input').value = sidParam;
+    doLogin();
     return;
   }
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr class="cursor-pointer" data-idx="${i}">
-      <td class="px-3 py-3 text-slate-500 font-mono text-xs">${i+1}</td>
-      <td class="px-3 py-3 font-mono font-semibold text-brand-700">${escapeHtml(r.hn)}</td>
-      <td class="px-3 py-3 whitespace-nowrap">
-        <div class="font-medium text-slate-800">${escapeHtml(r.ptname)}</div>
-        <div class="text-[11px] text-slate-400 font-mono">${escapeHtml(r.cid||'—')}</div>
-      </td>
-      <td class="px-3 py-3 text-center">${safe(r.age)}</td>
-      <td class="px-3 py-3"><span class="badge bg-violet-50 text-violet-700">${escapeHtml(r.pttype||'—')}</span></td>
-      <td class="px-3 py-3 text-center text-slate-700">${fmtDate(r.onset)}</td>
-      <td class="px-3 py-3 text-center text-xs text-slate-600 whitespace-nowrap">${fmtTime(r.onset_time)} - ${fmtTime(r.off_time)}</td>
-      <td class="px-3 py-3 text-center whitespace-nowrap">
-        <span class="text-slate-700 font-medium">${fmt(r.pre_weight,1)}</span>
-        <span class="text-slate-300 mx-1">/</span>
-        <span class="text-emerald-700 font-medium">${fmt(r.post_weight,1)}</span>
-      </td>
-      <td class="px-3 py-3 text-center whitespace-nowrap text-xs">
-        <span>${fmtInt(r.pre_bps)}/${fmtInt(r.pre_bpd)}</span>
-        <span class="text-slate-300 mx-1">→</span>
-        <span>${fmtInt(r.post_bps)}/${fmtInt(r.post_bpd)}</span>
-      </td>
-      <td class="px-3 py-3 text-center font-medium ${parseFloat(r.ultrafiltration_l)>3?'text-amber-700':'text-slate-700'}">${fmt(r.ultrafiltration_l,2)}</td>
-      <td class="px-3 py-3 text-center">${fmt(r.urr,1)}</td>
-      <td class="px-3 py-3 text-center">${fmt(r.ktv,2)}</td>
-      <td class="px-3 py-3 text-center text-xs whitespace-nowrap"><span class="text-rose-600">${fmt(r.hb,1)}</span> / <span class="text-blue-600">${fmt(r.hct,1)}</span></td>
-      <td class="px-3 py-3 text-xs">
-        <div>${escapeHtml(r.vascular_access||'—')}</div>
-        <div class="text-slate-400 text-[10px]">${escapeHtml(r.cath||'')}</div>
-      </td>
-      <td class="px-3 py-3 text-right font-semibold text-emerald-700">${r.hd_claim?fmtMoney(r.hd_claim):'—'}</td>
-      <td class="px-3 py-3 text-center">
-        <button class="text-brand-600 hover:bg-brand-50 px-2 py-1 rounded text-xs font-medium" data-detail="${i}">ดู</button>
-      </td>
-    </tr>
-  `).join('');
 
-  tbody.querySelectorAll('button[data-detail]').forEach(b => {
-    b.addEventListener('click', e => { e.stopPropagation(); openDetail(parseInt(b.dataset.detail)); });
-  });
-  tbody.querySelectorAll('tr[data-idx]').forEach(tr => {
-    tr.addEventListener('click', () => openDetail(parseInt(tr.dataset.idx)));
-  });
-}
-
-function openDetail(idx) {
-  const r = getFilteredRows()[idx];
-  if (!r) return;
-
-  $('modalTitle').textContent = `${r.ptname} · HN ${r.hn}`;
-  $('modalBody').innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-      ${detailStat('อายุ', safe(r.age)+' ปี', 'bg-blue-50 text-blue-700')}
-      ${detailStat('สิทธิ', safe(r.pttype), 'bg-violet-50 text-violet-700')}
-      ${detailStat('Patient Type', safe(r.patient_type), 'bg-amber-50 text-amber-700')}
-      ${detailStat('HD Mode', safe(r.hd_mode), 'bg-emerald-50 text-emerald-700')}
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${detailSection('การฟอกไต',
-        [['วันที่', fmtDate(r.onset)],
-         ['เวลา', `${fmtTime(r.onset_time)} - ${fmtTime(r.off_time)}`],
-         ['น้ำหนักก่อน', fmt(r.pre_weight,1)+' kg'],
-         ['น้ำหนักหลัง', fmt(r.post_weight,1)+' kg'],
-         ['Ultrafiltration', fmt(r.ultrafiltration_l,2)+' L'],
-         ['ส่วนสูง', fmt(r.height,0)+' cm'],
-         ['Spec Cond', safe(r.spec_cond)],
-         ['Blood flow rate', safe(r.blood_flow_rate)]
-        ])}
-      ${detailSection('ความดันโลหิต',
-        [['BP ก่อน', `${fmtInt(r.pre_bps)} / ${fmtInt(r.pre_bpd)}`],
-         ['BP หลัง', `${fmtInt(r.post_bps)} / ${fmtInt(r.post_bpd)}`]
-        ])}
-      ${detailSection('ผล Lab (3 เดือน)',
-        [['Creatinine', safe(r.creatinine)],
-         ['Albumin', safe(r.albumin)],
-         ['Hb', safe(r.hb)],
-         ['Hct', safe(r.hct)],
-         ['BUN ก่อนฟอก', safe(r.pre_dialysis_bun)],
-         ['BUN หลังฟอก', safe(r.post_dialysis_bun)],
-         ['URR (%)', fmt(r.urr,2)],
-         ['Kt/V', fmt(r.ktv,2)]
-        ])}
-      ${detailSection('Vascular Access / อุปกรณ์',
-        [['Vascular', safe(r.vascular_access)],
-         ['Cath', safe(r.cath)],
-         ['Membrane', safe(r.membrane)],
-         ['Dialyzer', safe(r.dialyzer)]
-        ])}
-      ${detailSection('ยาและการให้',
-        [['ESA / EPO', (r.esa_epo||'—').replace(/\n/g,'<br>')],
-         ['ปริมาณ', (r.qty||'—').replace(/\n/g,'<br>')],
-         ['Route', (r.route||'—').replace(/\n/g,'<br>')]
-        ], true)}
-      ${detailSection('ค่าใช้จ่าย',
-        [['ค่าฟอกไต', r.hd_claim?fmtMoney(r.hd_claim)+' ฿':'—'],
-         ['Blood flow', r.blood_flow?fmtMoney(r.blood_flow)+' ฿':'—'],
-         ['IV Iron', r.iv_iron?fmtMoney(r.iv_iron)+' ฿':'—'],
-         ['Heparin', r.lowmolheparin?fmtMoney(r.lowmolheparin)+' ฿':'—'],
-         ['Parnutr', r.parnutr?fmtMoney(r.parnutr)+' ฿':'—'],
-         ['Lab/Xray', r.lab_xray?fmtMoney(r.lab_xray)+' ฿':'—'],
-         ['Human Albumin', r.humanalb?fmtMoney(r.humanalb)+' ฿':'—']
-        ])}
-    </div>`;
-  $('detailModal').classList.remove('hidden');
-  $('detailModal').classList.add('flex');
-}
-
-function detailStat(label, value, cls) {
-  return `<div class="rounded-xl p-3 ${cls}">
-    <div class="text-[10px] font-semibold tracking-wider opacity-70">${escapeHtml(label)}</div>
-    <div class="font-display text-lg font-bold mt-1">${escapeHtml(value)}</div>
-  </div>`;
-}
-function detailSection(title, kvs, html=false) {
-  return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-    <div class="font-display font-semibold text-slate-700 mb-3 text-sm flex items-center gap-2">
-      <span class="w-1 h-4 rounded-full bg-brand-500"></span>${escapeHtml(title)}
-    </div>
-    <dl class="space-y-1.5 text-sm">
-      ${kvs.map(([k,v]) => `<div class="flex justify-between gap-3">
-        <dt class="text-slate-500">${escapeHtml(k)}</dt>
-        <dd class="text-slate-800 font-medium text-right">${html?(v||'—'):escapeHtml(v||'—')}</dd>
-      </div>`).join('')}
-    </dl>
-  </div>`;
-}
-
-function exportCSV() {
-  const rows = getFilteredRows();
-  if (!rows.length) { alert('ไม่มีข้อมูลสำหรับ export'); return; }
-  const cols = Object.keys(rows[0]);
-  const csv = [cols.join(',')].concat(
-    rows.map(r => cols.map(c => {
-      const v = r[c];
-      if (v == null) return '';
-      const s = String(v).replace(/"/g,'""').replace(/\r?\n/g,' ');
-      return /[",]/.test(s) ? `"${s}"` : s;
-    }).join(','))
-  ).join('\n');
-  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `hd-registry-${$('dateFrom').value}-${$('dateTo').value}.csv`;
-  a.click();
-}
-
-// ===== EVENT WIRING =====
-window.addEventListener('DOMContentLoaded', async () => {
-  clearAnyCachedSession();
-  // Initialize flatpickr date pickers
-  const fpFrom = flatpickr('#dateFrom', {
-    locale: 'th',
-    dateFormat: 'Y-m-d',
-    allowInput: false,
-    onChange: renderAll
-  });
-  const fpTo = flatpickr('#dateTo', {
-    locale: 'th',
-    dateFormat: 'Y-m-d',
-    allowInput: false,
-    onChange: renderAll
-  });
-  fpFrom.setDate(isoOffset(-7));
-  fpTo.setDate(todayISO());
-
-  $('btnLogin').addEventListener('click', manualLogin);
-  $('loginSessionId').addEventListener('keydown', e => { if (e.key==='Enter') manualLogin(); });
-  $('btnLogout').addEventListener('click', () => { if (confirm('ออกจากระบบ?')) logout(); });
-
-  $('btnDmis').addEventListener('click', () => {
-    window.open('https://iam.nhso.go.th/realms/nhso/protocol/openid-connect/auth?client_id=ucapps4&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Fucapps4.nhso.go.th%2Fdisease2ckd%2FossOpen', '_blank');
-  });
-  $('btnHdClaim').addEventListener('click', () => {
-    console.log('ส่งเคลม HD clicked');
-  });
-  $('btnRefresh').addEventListener('click', fetchData);
-  $('btnExport').addEventListener('click', exportCSV);
-  $('btnPrint').addEventListener('click', () => window.print());
-  $('filterPttype').addEventListener('change', renderAll);
-  $('filterClinic').addEventListener('focus', () => renderClinicDropdown($('filterClinic').value));
-  $('filterClinic').addEventListener('input', () => {
-    const inp = $('filterClinic');
-    if (!inp.value.trim()) {
-      inp.dataset.code = '';
-      fetchData();
-    }
-    renderClinicDropdown(inp.value);
-  });
-  $('filterClinic').addEventListener('blur', () => setTimeout(hideClinicDropdown, 150));
-  $('filterClinic').addEventListener('keydown', e => {
-    if (e.key === 'Escape') hideClinicDropdown();
-  });
-  $('filterReady').addEventListener('change', fetchData);
-  $('searchInput').addEventListener('input', renderAll);
-
-  $('presetToday').addEventListener('click', () => { fpFrom.setDate(todayISO()); fpTo.setDate(todayISO()); fetchData(); });
-  $('preset7d').addEventListener('click', () => { fpFrom.setDate(isoOffset(-7)); fpTo.setDate(todayISO()); fetchData(); });
-  $('preset30d').addEventListener('click', () => { fpFrom.setDate(isoOffset(-30)); fpTo.setDate(todayISO()); fetchData(); });
-  $('presetMonth').addEventListener('click', () => {
-    const d=new Date(); fpFrom.setDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`);
-    fpTo.setDate(todayISO()); fetchData();
-  });
-  $('presetLastMonth').addEventListener('click', () => {
-    const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);
-    const f=new Date(d); const t=new Date(d.getFullYear(), d.getMonth()+1, 0);
-    fpFrom.setDate(f.toISOString().split('T')[0]); fpTo.setDate(t.toISOString().split('T')[0]);
-    fetchData();
-  });
-  $('presetYear').addEventListener('click', () => {
-    const d=new Date(); fpFrom.setDate(`${d.getFullYear()}-01-01`); fpTo.setDate(todayISO()); fetchData();
-  });
-
-  $('closeModal').addEventListener('click', () => {
-    $('detailModal').classList.add('hidden'); $('detailModal').classList.remove('flex');
-  });
-  $('detailModal').addEventListener('click', e => {
-    if (e.target.id === 'detailModal') { $('detailModal').classList.add('hidden'); $('detailModal').classList.remove('flex'); }
-  });
-
-  $('btnSettings').addEventListener('click', () => {
-    $('settingsModal').classList.remove('hidden');
-    $('settingsModal').classList.add('flex');
-  });
-  $('closeSettings').addEventListener('click', () => {
-    $('settingsModal').classList.add('hidden');
-    $('settingsModal').classList.remove('flex');
-  });
-  $('settingsModal').addEventListener('click', e => {
-    if (e.target.id === 'settingsModal') { $('settingsModal').classList.add('hidden'); $('settingsModal').classList.remove('flex'); }
-  });
-  $('verifyModeToggle').addEventListener('change', e => saveVerifyMode(e.target.checked));
-
-  const ok = await tryAutoLogin();
-  if (ok) fetchData();
+  // 2. Restore from cookie (7-day persistence)
+  await tryRestoreSession();
 });
 </script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<!-- ============ CONFIRM OVERLAY ============ -->
+<div id="confirm-overlay" style="display:none;position:fixed;inset:0;z-index:200;flex-direction:column;background:#1a2e4a;font-family:'Sarabun',sans-serif;">
+
+  <!-- Header -->
+  <div style="background:#0d2742;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #f0871f;flex:0 0 auto;">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.3px;">ยืนยันการส่งเบิก Hemodialysis</div>
+      <div style="font-size:12px;color:#7a9bbf;margin-top:2px;">Disease Management Information System — NHSO</div>
+    </div>
+    <button onclick="closeConfirmScreen()" style="background:#1d3e60;color:#cde;border:none;border-radius:9px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+      ← กลับหน้าก่อน
+    </button>
+  </div>
+
+  <!-- Status bar -->
+  <div id="confirm-statusbar" style="background:#16395f;padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid rgba(255,255,255,.08);">
+  </div>
+
+  <!-- Body: 2 panels -->
+  <div style="display:flex;flex:1;overflow:hidden;">
+
+    <!-- LEFT: patient list -->
+    <div style="width:320px;flex:0 0 320px;background:#162a42;overflow-y:auto;border-right:1px solid rgba(255,255,255,.08);">
+      <div style="padding:12px 16px;font-size:12px;font-weight:700;color:#7a9bbf;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.08);">รายการที่ต้องตรวจสอบ</div>
+      <div id="confirm-list"></div>
+    </div>
+
+    <!-- RIGHT: detail -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- detail header -->
+      <div id="confirm-detail-header" style="background:#0d2742;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.1);flex:0 0 auto;">
+      </div>
+
+      <!-- detail body -->
+      <div id="confirm-detail-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;background:#f4f7fb;">
+      </div>
+
+      <!-- note + confirm button -->
+      <div style="background:#fff;border-top:1px solid #e4e9f0;padding:14px 20px;flex:0 0 auto;">
+        <div style="font-size:12.5px;font-weight:600;color:#54657a;margin-bottom:6px;">หมายเหตุ / เหตุผล <span style="color:#8b99a9;font-weight:400;">(กรณีข้อมูลไม่ครบถ้วน):</span></div>
+        <textarea id="confirm-note" rows="2" placeholder="อธิบายเหตุผลที่ข้อมูลไม่ครบ..." style="width:100%;border:1px solid #dde4ec;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;color:#1c2e44;resize:none;outline:none;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button onclick="confirmCurrentRow()" style="flex:1;background:#1a8a5a;color:#fff;border:none;border-radius:10px;padding:13px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            ✓ ยืนยันพร้อมส่งเบิก
+          </button>
+          <button onclick="skipCurrentRow()" style="background:#eef3fa;color:#54657a;border:1px solid #d6e2ee;border-radius:10px;padding:13px 20px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">
+            ข้ามเคสนี้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div id="confirm-footer" style="background:#0d2742;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(255,255,255,.1);flex:0 0 auto;">
+    <div id="confirm-footer-count" style="font-size:13px;color:#7a9bbf;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="confirmAllReady()" style="background:#1a8a5a;color:#fff;border:none;border-radius:9px;padding:10px 20px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;">
+        ✓ ยืนยันทั้งหมดที่ครบถ้วน
+      </button>
+      <button id="confirm-send-btn" disabled style="background:#2d4a6a;color:#6a8fac;border:1px solid #3d5f82;border-radius:9px;padding:10px 20px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:not-allowed;">
+        ส่งที่ยืนยันแล้วไปกรอกแบบฟอร์ม
+      </button>
+      <button onclick="closeConfirmScreen()" style="background:transparent;color:#7a9bbf;border:1px solid #3d5f82;border-radius:9px;padding:10px 18px;font-family:inherit;font-size:13px;cursor:pointer;">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIRM SCREEN STATE =====
+let confirmIndex = 0;
+let confirmStatuses = {}; // vn -> {status:'pending'|'confirmed'|'skipped', note:''}
+
+// field groups สำหรับ confirm screen — ตรงกับ FIELD_GROUPS ของ detail screen
+const CONFIRM_GROUPS = [
+  { title:'ข้อมูลผู้ป่วยและสิทธิ', hint:'จากทะเบียนผู้ป่วย', accent:'#3f9b6d', headBg:'#eef7f1',
+    rows:[
+      {dmis:'เลขบัตรประชาชน', code:'CID',      key:'cid'},
+      {dmis:'ชื่อ-สกุล',      code:'PT_NAME',  key:'ptname'},
+      {dmis:'วันเกิด',        code:'BIRTH',    key:'birthday'},
+      {dmis:'อายุ',          code:'AGE',      key:'age'},
+      {dmis:'วันอนุมัติ HD', code:'HD_APPR',  key:'date_hd'},
+      {dmis:'HN',            code:'HN',       key:'hn'},
+      {dmis:'Patient Type',  code:'PT_TYPE',  key:'patient_type'},
+      {dmis:'สิทธิรักษา',    code:'PTTYPE',   key:'pttype'},
+      {dmis:'Hipdata',       code:'HIPDATA',  key:'hipdata'},
+    ]},
+  { title:'ข้อมูลการฟอกเลือด (Session)', hint:'ค่าที่บันทึกขณะให้บริการ', accent:'#2f5d97', headBg:'#eef3fa',
+    rows:[
+      {dmis:'วันที่ทำ HD',           code:'HD_DATE',   key:'onset',           fmt:'date', required:true},
+      {dmis:'เวลาเริ่ม',             code:'TIME_START', key:'onset_time',       fmt:'time', required:true},
+      {dmis:'เวลาสิ้นสุด',           code:'TIME_END',   key:'off_time',         fmt:'time', required:true},
+      {dmis:'HD Mode',               code:'HD_MODE',    key:'hd_mode'},
+      {dmis:'Blood Flow Rate',       code:'QB',         key:'blood_flow_rate'},
+      {dmis:'ส่วนสูง (cm)',          code:'HEIGHT',     key:'height'},
+      {dmis:'น้ำหนักก่อน (kg)',      code:'WT_PRE',     key:'pre_weight',       required:true},
+      {dmis:'น้ำหนักหลัง (kg)',      code:'WT_POST',    key:'post_weight',      required:true},
+      {dmis:'BP ก่อน (SBP)',         code:'BP_PRE_S',   key:'pre_bps'},
+      {dmis:'BP ก่อน (DBP)',         code:'BP_PRE_D',   key:'pre_bpd'},
+      {dmis:'BP หลัง (SBP)',         code:'BP_POST_S',  key:'post_bps'},
+      {dmis:'BP หลัง (DBP)',         code:'BP_POST_D',  key:'post_bpd'},
+      {dmis:'Ultrafiltration (L)',   code:'UF_L',       key:'ultrafiltration_l'},
+      {dmis:'Ultrafiltration (kg)',  code:'UF_KG',      key:'ultrafiltration_kg'},
+      {dmis:'Spec Cond',             code:'SPEC_COND',  key:'spec_cond'},
+    ]},
+  { title:'ค่าแล็บและความเพียงพอการฟอก', hint:'นำเข้าจากผลแล็บ', accent:'#d98324', headBg:'#fbf2e4',
+    rows:[
+      {dmis:'Creatinine',   code:'CREAT',    key:'creatinine'},
+      {dmis:'Albumin',      code:'ALB',      key:'albumin'},
+      {dmis:'Hb',           code:'HB',       key:'hb'},
+      {dmis:'Hct (EPO)',    code:'HCT',      key:'hct'},
+      {dmis:'Pre BUN',      code:'BUN_PRE',  key:'pre_dialysis_bun'},
+      {dmis:'Post BUN',     code:'BUN_POST', key:'post_dialysis_bun'},
+      {dmis:'URR',          code:'URR',      key:'urr'},
+      {dmis:'Kt/V',         code:'KTV',      key:'ktv'},
+    ]},
+  { title:'อุปกรณ์และการเข้าถึงหลอดเลือด', hint:'ข้อมูลอุปกรณ์', accent:'#2f8f9e', headBg:'#e9f4f6',
+    rows:[
+      {dmis:'Vascular Access', code:'VAS_ACC',  key:'vascular_access'},
+      {dmis:'Cath',            code:'CATH',     key:'cath'},
+      {dmis:'Membrane',        code:'MEMBRANE', key:'membrane'},
+      {dmis:'Dialyzer',        code:'DIALYZER', key:'dialyzer'},
+      {dmis:'New Dialyzer',    code:'NEW_DIAL', key:'new_dialyze'},
+      {dmis:'Dbl Lumen',       code:'DBL_LMN',  key:'dbllumen'},
+    ]},
+  { title:'รายการที่เบิกเงินได้', hint:'รายการเบิกค่าบริการและยา', accent:'#c98a16', headBg:'#fbf6e3',
+    rows:[
+      {dmis:'HD Claim (บาท)',    code:'HD_CLAIM',  key:'hd_claim'},
+      {dmis:'ESA / EPO',         code:'ESA',       key:'esa_epo'},
+      {dmis:'IV Iron',           code:'IV_IRON',   key:'iv_iron'},
+      {dmis:'Low Mol Heparin',   code:'LMWH',      key:'lowmolheparin'},
+      {dmis:'Par Nutr',          code:'PAR_NUTR',  key:'parnutr'},
+      {dmis:'Lab / X-ray',       code:'LAB_XRAY',  key:'lab_xray'},
+      {dmis:'Human Alb',         code:'HUMAN_ALB', key:'humanalb'},
+    ]},
+];
+
+function confirmCompleteness(row) {
+  const all = CONFIRM_GROUPS.flatMap(g => g.rows);
+  const filled = all.filter(f => row[f.key] != null && row[f.key] !== '').length;
+  return Math.round((filled / all.length) * 100);
+}
+function fmtConfirmVal(f, row) {
+  const v = row[f.key];
+  if (v == null || v === '') return null;
+  if (f.fmt === 'date') return formatThaiDate(v);
+  if (f.fmt === 'time') return formatTime(v);
+  return String(v);
+}
+
+function circleProgress(pct, r) {
+  r = r || 20;
+  const c = 2 * Math.PI * r;
+  const color = pct === 100 ? '#1a8a5a' : pct >= 60 ? '#e68a00' : '#cf3b3b';
+  const dash = (pct / 100) * c;
+  return `<svg width="${r*2+8}" height="${r*2+8}" viewBox="0 0 ${r*2+8} ${r*2+8}">
+    <circle cx="${r+4}" cy="${r+4}" r="${r}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+    <circle cx="${r+4}" cy="${r+4}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+      stroke-dasharray="${dash} ${c}" stroke-dashoffset="${c/4}" stroke-linecap="round" transform="rotate(-90 ${r+4} ${r+4})"/>
+    <text x="${r+4}" y="${r+6}" text-anchor="middle" font-size="${r>16?'10':'9'}" font-weight="700" fill="${color}" font-family="IBM Plex Mono,monospace">${pct}%</text>
+  </svg>`;
+}
+
+function openConfirmScreen() {
+  if (!queueRows.length) { alert('กรุณาค้นหาข้อมูลก่อน'); return; }
+  confirmStatuses = {};
+  queueRows.forEach(r => { confirmStatuses[r.vn] = { status:'pending', note:'' }; });
+  confirmIndex = 0;
+  document.getElementById('confirm-overlay').style.display = 'flex';
+  renderConfirmAll();
+}
+
+function closeConfirmScreen() {
+  document.getElementById('confirm-overlay').style.display = 'none';
+}
+
+function renderConfirmAll() {
+  renderConfirmStatusBar();
+  renderConfirmList();
+  renderConfirmDetail(confirmIndex);
+  renderConfirmFooter();
+}
+
+function renderConfirmStatusBar() {
+  const total = queueRows.length;
+  const confirmed = queueRows.filter(r => confirmStatuses[r.vn]?.status === 'confirmed').length;
+  const skipped   = queueRows.filter(r => confirmStatuses[r.vn]?.status === 'skipped').length;
+  const incomplete = queueRows.filter(r => confirmCompleteness(r) < 100).length;
+  const pending = total - confirmed - skipped;
+  document.getElementById('confirm-statusbar').innerHTML = `
+    <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;font-size:13px;color:#cde;">
+      <span style="font-size:15px;">📋</span> รวม: <b>${total} เคส</b>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;background:rgba(26,138,90,.15);border-radius:8px;padding:7px 14px;font-size:13px;color:#5dca93;">
+      <span>✓</span> ยืนยันแล้ว: <b>${confirmed}</b>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;background:rgba(240,135,31,.12);border-radius:8px;padding:7px 14px;font-size:13px;color:#f0af5a;">
+      <span>⏳</span> รอตรวจสอบ: <b>${pending}</b>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;background:rgba(37,99,168,.15);border-radius:8px;padding:7px 14px;font-size:13px;color:#7ab3e8;">
+      <span>→</span> ข้าม: <b>${skipped}</b>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;background:rgba(207,59,59,.12);border-radius:8px;padding:7px 14px;font-size:13px;color:#f08080;">
+      <span>⚠</span> ข้อมูลไม่ครบ: <b>${incomplete}</b>
+    </div>`;
+}
+
+function renderConfirmList() {
+  document.getElementById('confirm-list').innerHTML = queueRows.map((r, i) => {
+    const st  = confirmStatuses[r.vn] || {status:'pending'};
+    const pct = confirmCompleteness(r);
+    const active = i === confirmIndex;
+    const bg = active ? 'rgba(240,135,31,.12)' : 'transparent';
+    const leftBorder = active ? '3px solid #f0871f' : '3px solid transparent';
+    const stBadge = st.status === 'confirmed'
+      ? '<span style="font-size:10px;background:#1a8a5a;color:#fff;border-radius:5px;padding:2px 6px;font-weight:700;">ยืนยัน</span>'
+      : st.status === 'skipped'
+      ? '<span style="font-size:10px;background:#2563a8;color:#fff;border-radius:5px;padding:2px 6px;font-weight:700;">ข้าม</span>'
+      : '';
+    return `<div onclick="selectConfirmRow(${i})" style="padding:12px 16px;cursor:pointer;background:${bg};border-left:${leftBorder};display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05);">
+      <div style="flex:0 0 22px;font-size:12px;color:#4a7090;font-weight:700;">${i+1}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#c8dff0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.ptname||'-'}</div>
+        <div style="font-size:11px;color:#4a7090;font-family:'IBM Plex Mono',monospace;margin-top:2px;">HN: ${r.hn||'-'} | ${formatThaiDate(r.onset)}</div>
+        ${stBadge ? '<div style="margin-top:4px;">'+stBadge+'</div>' : ''}
+      </div>
+      <div style="flex:0 0 auto;">${circleProgress(pct, 16)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderConfirmDetail(idx) {
+  if (!queueRows[idx]) return;
+  const r = queueRows[idx];
+  const pct = confirmCompleteness(r);
+  const pctColor = pct === 100 ? '#1a8a5a' : pct >= 60 ? '#e68a00' : '#cf3b3b';
+
+  // Header
+  document.getElementById('confirm-detail-header').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#fff;">${r.ptname||'-'}</div>
+        <div style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;margin-top:3px;">HN: ${r.hn||'-'} | VN: ${r.vn||'-'} | ID: ${r.id||'-'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:${pctColor};color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;">ความครบถ้วน ${pct}%</div>
+        <button onclick="selectConfirmRow(${idx>0?idx-1:idx})" style="background:rgba(255,255,255,.1);color:#cde;border:none;border-radius:7px;padding:7px 12px;cursor:pointer;font-family:inherit;font-size:13px;">◀ ก่อนหน้า</button>
+        <span style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;">${idx+1}/${queueRows.length}</span>
+        <button onclick="selectConfirmRow(${idx<queueRows.length-1?idx+1:idx})" style="background:rgba(255,255,255,.1);color:#cde;border:none;border-radius:7px;padding:7px 12px;cursor:pointer;font-family:inherit;font-size:13px;">ถัดไป ▶</button>
+      </div>
+    </div>`;
+
+  // Body: layout เดียวกับ renderDetail (screen ตรวจสอบก่อนส่งเบิก)
+  const stMap = {
+    ok:    {label:'จับคู่อัตโนมัติ', color:'#1a8a5a', bg:'#e6f4ec'},
+    review:{label:'ต้องตรวจสอบ',    color:'#c9821a', bg:'#fbf1de'},
+    empty: {label:'ไม่มีข้อมูล',    color:'#8295a8', bg:'#eef1f5'},
+  };
+  const body = document.getElementById('confirm-detail-body');
+  body.innerHTML = CONFIRM_GROUPS.map(g => {
+    const filled = g.rows.filter(f => { const v=r[f.key]; return v!=null&&v!==''; }).length;
+    const rowsHtml = g.rows.map(f => {
+      const display = fmtConfirmVal(f, r);
+      const stKey   = display != null ? 'ok' : (f.required ? 'review' : 'empty');
+      const st      = stMap[stKey];
+      return `<div style="display:grid;grid-template-columns:1fr 1.1fr 150px;gap:0;padding:10px 12px;border-top:1px solid #f0f3f7;align-items:center;">
+        <div>
+          <div style="font-size:13.5px;color:#1c2e44;font-weight:500;">${f.dmis}${f.required?'<span style="color:#cf3b3b;font-size:10px;"> *</span>':''}</div>
+          <div style="font-size:11px;color:#9aa7b6;font-family:'IBM Plex Mono',monospace;">${f.code}</div>
+        </div>
+        <div style="font-size:13.5px;color:#33465c;">${display ?? '—'}</div>
+        <div><span style="background:${st.bg};color:${st.color};font-size:12px;font-weight:600;border-radius:7px;padding:4px 11px;display:inline-block;">${st.label}</span></div>
+      </div>`;
+    }).join('');
+    return `<div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:11px;padding:13px 20px;border-left:5px solid ${g.accent};background:${g.headBg};">
+        <div style="font-size:15px;font-weight:700;color:#1c2e44;">${g.title}</div>
+        <div style="font-size:12px;color:#7587a0;">${g.hint}</div>
+        <div style="flex:1;"></div>
+        <div style="font-size:12px;color:#8b99a9;font-family:'IBM Plex Mono',monospace;">${filled}/${g.rows.length} ฟิลด์</div>
+      </div>
+      <div style="padding:4px 8px 8px;">
+        <div style="display:grid;grid-template-columns:1fr 1.1fr 150px;gap:0;padding:9px 12px 7px;font-size:11.5px;font-weight:600;color:#94a3b4;letter-spacing:.3px;">
+          <div>ฟิลด์ DMIS &amp; HD</div><div>ค่าจาก HIS</div><div>สถานะ</div>
+        </div>
+        ${rowsHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Restore note
+  const st = confirmStatuses[r.vn] || {};
+  const noteEl = document.getElementById('confirm-note');
+  if (noteEl) noteEl.value = st.note || '';
+}
+
+function selectConfirmRow(idx) {
+  if (idx < 0 || idx >= queueRows.length) return;
+  // save note for current
+  const cur = queueRows[confirmIndex];
+  if (cur && confirmStatuses[cur.vn]) {
+    confirmStatuses[cur.vn].note = document.getElementById('confirm-note')?.value || '';
+  }
+  confirmIndex = idx;
+  renderConfirmAll();
+  // scroll list item into view
+  const items = document.querySelectorAll('#confirm-list > div');
+  if (items[idx]) items[idx].scrollIntoView({ block:'nearest' });
+}
+
+function confirmCurrentRow() {
+  const r = queueRows[confirmIndex];
+  if (!r) return;
+  confirmStatuses[r.vn] = {
+    status: 'confirmed',
+    note: document.getElementById('confirm-note')?.value || ''
+  };
+  // move to next pending
+  const next = queueRows.findIndex((row, i) => i > confirmIndex && confirmStatuses[row.vn]?.status === 'pending');
+  renderConfirmAll();
+  if (next !== -1) selectConfirmRow(next);
+  updateConfirmSendBtn();
+}
+
+function skipCurrentRow() {
+  const r = queueRows[confirmIndex];
+  if (!r) return;
+  confirmStatuses[r.vn] = {
+    status: 'skipped',
+    note: document.getElementById('confirm-note')?.value || ''
+  };
+  const next = queueRows.findIndex((row, i) => i > confirmIndex && confirmStatuses[row.vn]?.status === 'pending');
+  renderConfirmAll();
+  if (next !== -1) selectConfirmRow(next);
+  updateConfirmSendBtn();
+}
+
+function confirmAllReady() {
+  queueRows.forEach(r => {
+    const pct = confirmCompleteness(r);
+    if (pct === 100 && confirmStatuses[r.vn]?.status === 'pending') {
+      confirmStatuses[r.vn].status = 'confirmed';
+    }
+  });
+  renderConfirmAll();
+  updateConfirmSendBtn();
+}
+
+function updateConfirmSendBtn() {
+  const confirmed = queueRows.filter(r => confirmStatuses[r.vn]?.status === 'confirmed').length;
+  const btn = document.getElementById('confirm-send-btn');
+  if (!btn) return;
+  if (confirmed > 0) {
+    btn.disabled = false;
+    btn.style.background = '#2563a8';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#2563a8';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '#2d4a6a';
+    btn.style.color = '#6a8fac';
+    btn.style.borderColor = '#3d5f82';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+function renderConfirmFooter() {
+  const total = queueRows.length;
+  const confirmed = queueRows.filter(r => confirmStatuses[r.vn]?.status === 'confirmed').length;
+  const ready = queueRows.filter(r => confirmCompleteness(r) === 100 && confirmStatuses[r.vn]?.status === 'pending').length;
+  document.getElementById('confirm-footer-count').textContent =
+    `ยืนยันแล้ว ${confirmed} จาก ${total} เคส  |  ${ready} เคสพร้อมยืนยันได้ทันที`;
+  updateConfirmSendBtn();
+}
+</script>
+
 </body>
 </html>
