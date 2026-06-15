@@ -798,18 +798,18 @@ function buildQueueSQL(from, to, pttype, clinic) {
     (SELECT SUM(o1.sum_price) FROM opitemrece o1 WHERE o1.vn=v.vn AND o1.income IN('07','08')) AS lab_xray,
     (SELECT SUM(o3.sum_price) FROM opitemrece o3 INNER JOIN nondrugitems n ON n.icode=o3.icode WHERE o3.vn=v.vn AND n.billcode='34116') AS humanalb
   FROM clinic_hd_service sv
-  LEFT JOIN ovst v ON sv.vn=v.vn
-  INNER JOIN vn_stat st ON st.vn=v.vn
-  INNER JOIN opdscreen s ON s.vn=v.vn
-  LEFT JOIN opdscreen_bp bp ON bp.vn=v.vn
+  INNER JOIN ovst v ON sv.vn=v.vn
   INNER JOIN patient p ON p.hn=v.hn
+  INNER JOIN vn_stat st ON st.vn=v.vn
+  LEFT JOIN opdscreen s ON s.vn=v.vn
   INNER JOIN visit_pttype vp ON vp.vn=v.vn
   INNER JOIN pttype pe ON pe.pttype=vp.pttype
   INNER JOIN clinicmember c ON c.hn=v.hn
   LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
   LEFT JOIN clinic_hd_machine m ON m.clinic_hd_machine_id=sv.clinic_hd_machine_id
   LEFT JOIN clinic_hd_service_pcr pcr ON pcr.clinic_hd_service_id=sv.clinic_hd_service_id
-  LEFT JOIN clinic_hd_service_vs vs ON vs.clinic_hd_service_vs_opds_bp=bp.opdscreen_bp_id
+  LEFT JOIN clinic_hd_service_vs vs ON vs.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN opdscreen_bp bp ON bp.opdscreen_bp_id=vs.clinic_hd_service_vs_opds_bp
   LEFT JOIN clinic_hd_service_ckd ckd ON ckd.clinic_hd_service_id=sv.clinic_hd_service_id
   LEFT JOIN (
     SELECT v2.hn,
