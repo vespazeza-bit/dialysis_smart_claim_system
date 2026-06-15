@@ -1320,15 +1320,45 @@ function extractConnectionConfig(data) {
 // ===== BMS API: EXECUTE SQL =====
 // Spec: GET {apiUrl}/api/sql?sql={minifiedSQL}&app=BMS.Dashboard.React
 //       Authorization: Bearer {apiAuthKey}
+//       Falls back to POST when URL > ~4000 chars (CTE queries)
 async function executeSqlViaApi(sql) {
   if (!APP.apiUrl || !APP.apiAuthKey) throw new Error('ยังไม่ได้เชื่อมต่อ session');
-  const minified = sql.replace(/--[^\n]*/g, '').replace(/\s+/g, ' ').trim();
-  const url = `${APP.apiUrl}/api/sql?sql=${encodeURIComponent(minified)}&app=BMS.Dashboard.React`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${APP.apiAuthKey}` },
-  });
-  if (res.status === 401) throw Object.assign(new Error('Unauthorized'), { type: 'auth' });
-  if (res.status === 502) throw Object.assign(new Error('Bad Gateway'), { type: 'gateway' });
+
+  // Aggressive minification: remove comments, collapse whitespace, trim around punctuation
+  const minified = sql
+    .replace(/--[^\n]*/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\( /g, '(').replace(/ \)/g, ')')
+    .replace(/ ,/g, ',').replace(/, /g, ',')
+    .replace(/ = /g, '=').replace(/ > /g, '>').replace(/ < /g, '<')
+    .trim();
+
+  const encoded  = encodeURIComponent(minified);
+  const baseUrl  = `${APP.apiUrl}/api/sql`;
+  const appParam = 'app=BMS.Dashboard.React';
+  const getUrl   = `${baseUrl}?sql=${encoded}&${appParam}`;
+  const headers  = { Authorization: `Bearer ${APP.apiAuthKey}` };
+
+  let res;
+  try {
+    // Try GET first (standard path)
+    res = await fetch(getUrl, { headers });
+  } catch (_getErr) {
+    // GET failed (URL too long / network) → fallback to POST
+    try {
+      res = await fetch(`${baseUrl}?${appParam}`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `sql=${encoded}`,
+      });
+    } catch (_postErr) {
+      throw new Error(`ไม่สามารถเชื่อมต่อ API ได้ — ตรวจสอบว่า HOSxP BMS server ทำงานอยู่ (URL length: ${getUrl.length})`);
+    }
+  }
+
+  if (res.status === 401) throw Object.assign(new Error('Unauthorized (401) — session หมดอายุ'), { type: 'auth' });
+  if (res.status === 414) throw new Error('SQL ยาวเกิน server รองรับ (414) — กรุณาแจ้งผู้ดูแลระบบ');
+  if (res.status === 502) throw Object.assign(new Error('Bad Gateway (502)'), { type: 'gateway' });
   if (!res.ok)            throw Object.assign(new Error(`HTTP ${res.status}`), { type: 'http' });
   const json = await res.json();
   if (json.MessageCode !== 200) throw new Error(json.Message || 'Query failed');
