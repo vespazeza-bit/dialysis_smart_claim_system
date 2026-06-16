@@ -518,7 +518,7 @@ const MAP_CONFIG = [
 ];
 const NAV_MENU = [
   {key:'dashboard', label:'Dashboard', icon:'grid'},
-  {key:'queue', label:'ส่งเคลมฟอกเลือด', icon:'list', badge:'124'},
+  {key:'queue', label:'ส่งเคลมฟอกเลือด', icon:'list', badge:'…'},
   {key:'errors', label:'รายการ Reject', icon:'alert', badge:'6'},
   {key:'logs', label:'ประวัติการส่งเบิก', icon:'history'},
   {key:'settings', label:'ตั้งค่า', icon:'gear', noNav:true, submenu:[
@@ -613,6 +613,26 @@ function updateNavActive() {
     btn.style.fontWeight = active ? '600'                   : '400';
     btn.style.background = active ? 'rgba(255,255,255,.08)' : 'transparent';
   });
+}
+
+function updateQueueBadge(count) {
+  const btn = document.querySelector('.nav-btn[data-key="queue"]');
+  if (!btn) return;
+  const badge = btn.querySelector('.nav-badge');
+  if (badge) badge.textContent = count;
+}
+
+async function loadTodayQueueCount() {
+  if (!APP.apiUrl) return;
+  try {
+    const rows = await executeSqlViaApi(
+      `SELECT COUNT(DISTINCT sv.vn) AS cnt
+       FROM clinic_hd_service sv
+       INNER JOIN ovst v ON v.vn=sv.vn
+       WHERE v.vstdate=CURDATE()`
+    );
+    if (rows && rows.length) updateQueueBadge(rows[0].cnt ?? 0);
+  } catch(e) { /* silent — badge stays at previous value */ }
 }
 
 function toggleSubmenu(key) {
@@ -992,6 +1012,12 @@ async function searchQueue() {
     if (sum) sum.textContent = `พบ ${display.length} รายการ (ทั้งหมด ${queueRows.length} รายการ)`;
     renderQueue(display);
     updateClaimButtons();
+    // ถ้า filter เป็นวันนี้ ให้อัปเดต badge ตรงนั้นเลย ไม่ต้องรอ query แยก
+    if (from === todayISO() && to === todayISO()) {
+      updateQueueBadge(queueRows.length);
+    } else {
+      loadTodayQueueCount();
+    }
   } catch(e) {
     if (tbl) tbl.innerHTML = `<div style="padding:32px;text-align:center;color:#cf3b3b;font-size:13.5px;">เกิดข้อผิดพลาด: ${e.message}</div>`;
   }
@@ -1526,6 +1552,7 @@ function showApp() {
   }
 
   initApp();
+  loadTodayQueueCount();
 }
 
 // ===== RESTORE SESSION FROM COOKIE =====
