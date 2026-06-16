@@ -847,17 +847,14 @@ async function enrichQueueData(rows) {
   WHERE lh.vn IN (${vnList})
   GROUP BY lh.vn`;
 
-  /* HD clinical fields direct from clinic_hd_service */
+  /* HD clinical fields: clinic_hd_service + opdscreen for height */
   const hdSQL = `SELECT sv.vn,
-    sv.blood_flow_mlmin AS blood_flow_rate,
-    sv.blood_flow_mlmin AS blood_flow,
-    sv.dialyzer_type AS dialyzer,
-    sv.membrane_type AS membrane,
-    sv.vascular_access AS vascular_access,
-    sv.urr AS urr,
-    sv.kt_v AS ktv_calc,
-    sv.reason AS reason
+    sv.machine_flow AS blood_flow_rate,
+    sv.machine_flow AS blood_flow,
+    sv.clinic_hd_dialyzer_id AS dialyzer,
+    ops.height
   FROM clinic_hd_service sv
+  LEFT JOIN opdscreen ops ON ops.vn=sv.vn
   WHERE sv.vn IN (${vnList})`;
 
   /* Billing: total charges from opitemrece */
@@ -927,7 +924,7 @@ async function enrichQueueData(rows) {
       post_bps:         bp.post_bps         ?? null,
       post_bpd:         bp.post_bpd         ?? null,
       // --- enriched: labs ---
-      height:           null,
+      height:           hd.height           ?? null,
       creatinine:       lab.creatinine      ?? null,
       albumin:          lab.albumin         ?? null,
       urr:              lab.urr  ?? hd.urr  ?? null,
