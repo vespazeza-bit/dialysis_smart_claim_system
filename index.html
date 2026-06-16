@@ -766,7 +766,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_post_kgs) AS post_weight,
     NULL AS post_bps,
     NULL AS post_bpd,
-    MAX(st.height) AS height,
+    NULL AS height,
     NULL AS creatinine,
     NULL AS albumin,
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
