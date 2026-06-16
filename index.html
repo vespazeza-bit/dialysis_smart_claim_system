@@ -755,7 +755,10 @@ function formatThaiDate(s) {
 }
 function formatTime(s) {
   if (!s) return '-';
-  return String(s).slice(0,5);
+  const str = String(s);
+  const dt = str.match(/\d{4}-\d{2}-\d{2}[T ](\d{2}:\d{2})/);
+  if (dt) return dt[1];
+  return str.slice(0, 5);
 }
 function computeQueueStatus(row) {
   const keys = ['onset','onset_time','off_time','pre_weight','post_weight'];
