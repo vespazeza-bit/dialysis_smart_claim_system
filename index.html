@@ -788,7 +788,8 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
     'Chronic' AS hd_mode,
-    CASE WHEN LENGTH(v.vn)<12 THEN 'IPD' ELSE 'OPD' END AS patient_type
+    CASE WHEN LENGTH(v.vn)<12 THEN 'IPD' ELSE 'OPD' END AS patient_type,
+    MAX(st.height) AS height
   FROM clinic_hd_service sv
   INNER JOIN ovst v ON v.vn=sv.vn
   INNER JOIN patient p ON p.hn=v.hn
@@ -856,24 +857,29 @@ async function enrichQueueData(rows) {
   WHERE lh.vn IN (${vn})
   GROUP BY lh.vn`, 20);
 
-  /* HD clinical fields — CASE spec_cond mapped in JS; chunk 20 */
+  /* HD simple: blood_flow, dialyzer, dch_type_id — no joins, very short — chunk 40 */
   const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
-  const hdRows = await chunked(vn => `SELECT sv.vn,
-    sv.machine_flow AS blood_flow_rate,
-    sv.machine_flow AS blood_flow,
-    sv.clinic_hd_dialyzer_id AS dialyzer,
-    sv.clinic_hd_dch_type_id AS dch_type_id,
+  const hdSimpleRows = await chunked(vn => `SELECT sv.vn,
+    MAX(sv.machine_flow) AS blood_flow_rate,
+    MAX(sv.machine_flow) AS blood_flow,
+    MAX(sv.clinic_hd_dialyzer_id) AS dialyzer,
+    MAX(sv.clinic_hd_dch_type_id) AS dch_type_id
+  FROM clinic_hd_service sv
+  WHERE sv.vn IN (${vn})
+  GROUP BY sv.vn`, 40);
+
+  /* HD lookup: membrane, vascular_access, reason — joins — chunk 25 */
+  const hdLookupRows = await chunked(vn => `SELECT sv.vn,
     mt.membrane_type_name AS membrane,
     vss.clinic_hd_vss_type_name AS vascular_access,
-    sdr.reason_name AS reason,
-    ops.height
+    sdr.reason_name AS reason
   FROM clinic_hd_service sv
-  LEFT JOIN opdscreen ops ON ops.vn=sv.vn
   LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
   LEFT JOIN membrane_type mt ON mt.membrane_type_id=cd.membrane_type_id
   LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
   LEFT JOIN hd_short_dialysis_reason sdr ON sdr.hd_short_dialysis_reason_id=sv.hd_short_dialysis_reason_id
-  WHERE sv.vn IN (${vn})`, 20);
+  WHERE sv.vn IN (${vn})
+  GROUP BY sv.vn`, 25);
 
   /* Billing: total charges from opitemrece — chunk 40 (short query) */
   const billRows = await chunked(vn => `SELECT vn,SUM(sum_price) AS hd_claim
@@ -904,9 +910,13 @@ async function enrichQueueData(rows) {
     if (!m.humanalb && n.includes('albumin')) { m.humanalb = row.qty; }
   }
 
+  /* Merge hdSimple + hdLookup into one hdMap */
+  const hdMap = {};
+  for (const r of hdSimpleRows) hdMap[r.vn] = { ...r };
+  for (const r of hdLookupRows) hdMap[r.vn] = { ...(hdMap[r.vn] || {}), ...r };
+
   const bpMap   = toMap(bpRows);
   const labMap  = toMap(labRows);
-  const hdMap   = toMap(hdRows);
   const billMap = toMap(billRows);
 
   return rows.map(r => {
@@ -948,7 +958,7 @@ async function enrichQueueData(rows) {
       post_bps:         bp.post_bps         ?? null,
       post_bpd:         bp.post_bpd         ?? null,
       // --- enriched: labs ---
-      height:           hd.height           ?? null,
+      height:           r.height            ?? null,
       creatinine:       lab.creatinine      ?? null,
       albumin:          lab.albumin         ?? null,
       urr:              lab.urr  ?? hd.urr  ?? null,
