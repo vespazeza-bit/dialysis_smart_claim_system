@@ -788,7 +788,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
     'Chronic' AS hd_mode,
-    CASE WHEN LENGTH(v.vn)<12 THEN 'OPD' ELSE 'IPD' END AS patient_type
+    CASE WHEN LENGTH(v.vn)<12 THEN 'IPD' ELSE 'OPD' END AS patient_type
   FROM clinic_hd_service sv
   INNER JOIN ovst v ON v.vn=sv.vn
   INNER JOIN patient p ON p.hn=v.hn
@@ -848,21 +848,17 @@ async function enrichQueueData(rows) {
   WHERE lh.vn IN (${vnList})
   GROUP BY lh.vn`;
 
-  /* HD clinical fields: clinic_hd_service + opdscreen + membrane + vascular access + spec_cond + reason */
+  /* HD clinical fields — CASE spec_cond mapped in JS to keep URL short */
+  const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
   const hdSQL = `SELECT sv.vn,
     sv.machine_flow AS blood_flow_rate,
     sv.machine_flow AS blood_flow,
     sv.clinic_hd_dialyzer_id AS dialyzer,
+    sv.clinic_hd_dch_type_id AS dch_type_id,
     mt.membrane_type_name AS membrane,
     vss.clinic_hd_vss_type_name AS vascular_access,
-    ops.height,
-    CASE sv.clinic_hd_dch_type_id
-      WHEN '1' THEN 'Complete'
-      WHEN '2' THEN 'Unstable'
-      WHEN '3' THEN 'Hemofiltration'
-      WHEN '4' THEN 'Initial'
-    END AS spec_cond,
-    sdr.reason_name AS reason
+    sdr.reason_name AS reason,
+    ops.height
   FROM clinic_hd_service sv
   LEFT JOIN opdscreen ops ON ops.vn=sv.vn
   LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
@@ -955,7 +951,7 @@ async function enrichQueueData(rows) {
       blood_flow_rate:  hd.blood_flow_rate  ?? null,
       reason:           hd.reason           ?? null,
       cath:             null,
-      spec_cond:        hd.spec_cond        ?? null,
+      spec_cond:        HD_DCH[hd.dch_type_id] ?? null,
       patient_type:     r.patient_type      ?? null,
       // --- enriched: billing ---
       hd_claim:         bill.hd_claim       ?? null,
