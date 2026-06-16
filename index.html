@@ -768,6 +768,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
   if (pttype) where += ` AND pe.pttype='${esc(pttype)}'`;
   return `SELECT
     MAX(sv.clinic_hd_service_id) AS id,
+    MAX(sv.service_date) AS service_date,
     v.vn,
     MAX(p.cid) AS cid,
     MAX(v.hn) AS hn,
@@ -777,6 +778,10 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(pe.name) AS pttype,
     MAX(pe.hipdata_code) AS hipdata,
     MAX(sv.service_date) AS date_hd,
+    MAX(sv.service_date) AS hd_sdate_date,
+    MAX(sv.service_time) AS start_hh,
+    MAX(sv.service_date) AS hd_edate_date,
+    MAX(sv.session_off_time) AS end_hh,
     MAX(sv.service_date) AS onset,
     MAX(sv.service_time) AS onset_time,
     MAX(sv.session_off_time) AS off_time,
@@ -793,14 +798,15 @@ function buildQueueSQL(from, to, pttype, clinic) {
     NULL AS urr,
     NULL AS ktv,
     NULL AS hb,
-    NULL AS pre_dialysis_bun,
-    NULL AS post_dialysis_bun,
+    NULL AS pre_bun,
+    NULL AS post_bun,
     NULL AS blood_flow,
     NULL AS membrane,
     NULL AS dialyzer,
     NULL AS vascular_access,
     NULL AS cath,
     NULL AS spec_cond,
+    NULL AS reason,
     NULL AS patient_type,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
     'Chronic' AS hd_mode,
@@ -866,7 +872,8 @@ async function enrichQueueData(rows) {
     MAX(CASE WHEN li.lab_items_name LIKE '%Albumin%' OR li.lab_items_name LIKE '%albumin%' THEN lo.lab_order_result END) AS albumin,
     MAX(CASE WHEN li.lab_items_name LIKE '%Hb%' OR li.lab_items_name LIKE '%Hemoglobin%' OR li.lab_items_name LIKE '%hemoglobin%' THEN lo.lab_order_result END) AS hb,
     MAX(CASE WHEN li.lab_items_name LIKE '%Hct%' OR li.lab_items_name LIKE '%Hematocrit%' THEN lo.lab_order_result END) AS hct,
-    MAX(CASE WHEN li.lab_items_name LIKE '%BUN%' OR li.lab_items_name LIKE '%Urea Nitrogen%' OR li.lab_items_name LIKE '%blood urea%' THEN lo.lab_order_result END) AS pre_dialysis_bun,
+    MAX(CASE WHEN li.lab_items_name LIKE '%BUN pre%' OR li.lab_items_name LIKE '%pre BUN%' OR li.lab_items_name LIKE '%Pre-BUN%' OR (li.lab_items_name LIKE '%BUN%' AND li.lab_items_name NOT LIKE '%post%') THEN lo.lab_order_result END) AS pre_bun,
+    MAX(CASE WHEN li.lab_items_name LIKE '%BUN post%' OR li.lab_items_name LIKE '%post BUN%' OR li.lab_items_name LIKE '%Post-BUN%' THEN lo.lab_order_result END) AS post_bun,
     MAX(CASE WHEN li.lab_items_name LIKE '%URR%' THEN lo.lab_order_result END) AS urr,
     MAX(CASE WHEN li.lab_items_name LIKE '%Kt%' OR li.lab_items_name LIKE '%KT/V%' OR li.lab_items_name LIKE '%KTV%' THEN lo.lab_order_result END) AS ktv
   FROM lab_head lh
@@ -878,11 +885,13 @@ async function enrichQueueData(rows) {
   /* HD clinical fields direct from clinic_hd_service */
   const hdSQL = `SELECT sv.vn,
     sv.blood_flow_mlmin AS blood_flow_rate,
+    sv.blood_flow_mlmin AS blood_flow,
     sv.dialyzer_type AS dialyzer,
     sv.membrane_type AS membrane,
     sv.vascular_access AS vascular_access,
     sv.urr AS urr,
-    sv.kt_v AS ktv_calc
+    sv.kt_v AS ktv_calc,
+    sv.reason AS reason
   FROM clinic_hd_service sv
   WHERE sv.vn IN (${vnList})`;
 
@@ -892,7 +901,9 @@ async function enrichQueueData(rows) {
 
   /* Meds: ESA/EPO, IV Iron, LMWH, Human Albumin */
   const medSQL = `SELECT sv.vn,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS esa_epo,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN d.name END) AS esa_epo,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN ml.qty END) AS qty,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN ml.route END) AS route,
     MAX(CASE WHEN LOWER(d.name) LIKE '%iron%' OR LOWER(d.name) LIKE '%ferinject%' OR LOWER(d.name) LIKE '%venofer%' OR LOWER(d.name) LIKE '%cosmofer%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS iv_iron,
     MAX(CASE WHEN LOWER(d.name) LIKE '%heparin%' AND (LOWER(d.name) LIKE '%low%' OR LOWER(d.name) LIKE '%lmwh%' OR LOWER(d.name) LIKE '%enox%' OR LOWER(d.name) LIKE '%nadr%') THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS lowmolheparin,
     MAX(CASE WHEN LOWER(d.name) LIKE '%albumin%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS humanalb
@@ -920,26 +931,31 @@ async function enrichQueueData(rows) {
     const med  = medMap[r.vn]  || {};
     return {
       ...r,
-      pre_bps:          bp.pre_bps            ?? null,
-      pre_bpd:          bp.pre_bpd            ?? null,
-      post_bps:         bp.post_bps           ?? null,
-      post_bpd:         bp.post_bpd           ?? null,
-      creatinine:       lab.creatinine        ?? null,
-      albumin:          lab.albumin           ?? null,
-      hb:               lab.hb                ?? null,
-      hct:              lab.hct               ?? null,
-      pre_dialysis_bun: lab.pre_dialysis_bun  ?? null,
-      urr:              lab.urr  ?? hd.urr    ?? null,
-      ktv:              lab.ktv  ?? hd.ktv_calc ?? null,
-      blood_flow_rate:  hd.blood_flow_rate    ?? null,
-      dialyzer:         hd.dialyzer           ?? null,
-      membrane:         hd.membrane           ?? null,
-      vascular_access:  hd.vascular_access    ?? null,
-      hd_claim:         bill.hd_claim         ?? null,
-      esa_epo:          med.esa_epo           ?? null,
-      iv_iron:          med.iv_iron           ?? null,
-      lowmolheparin:    med.lowmolheparin     ?? null,
-      humanalb:         med.humanalb          ?? null,
+      pre_bps:         bp.pre_bps           ?? null,
+      pre_bpd:         bp.pre_bpd           ?? null,
+      post_bps:        bp.post_bps          ?? null,
+      post_bpd:        bp.post_bpd          ?? null,
+      creatinine:      lab.creatinine       ?? null,
+      albumin:         lab.albumin          ?? null,
+      hb:              lab.hb               ?? null,
+      hct:             lab.hct              ?? null,
+      pre_bun:         lab.pre_bun          ?? null,
+      post_bun:        lab.post_bun         ?? null,
+      urr:             lab.urr  ?? hd.urr   ?? null,
+      ktv:             lab.ktv  ?? hd.ktv_calc ?? null,
+      blood_flow:      hd.blood_flow        ?? null,
+      blood_flow_rate: hd.blood_flow_rate   ?? null,
+      dialyzer:        hd.dialyzer          ?? null,
+      membrane:        hd.membrane          ?? null,
+      vascular_access: hd.vascular_access   ?? null,
+      reason:          hd.reason            ?? null,
+      hd_claim:        bill.hd_claim        ?? null,
+      esa_epo:         med.esa_epo          ?? null,
+      qty:             med.qty              ?? null,
+      route:           med.route            ?? null,
+      iv_iron:         med.iv_iron          ?? null,
+      lowmolheparin:   med.lowmolheparin    ?? null,
+      humanalb:        med.humanalb         ?? null,
     };
   });
 }
@@ -975,7 +991,11 @@ function initQueueScreen() {
   if (t && !t.value) { t.value = today; updateDateLabel('q-date-to'); }
   loadQueueDropdowns(f ? f.value : today, t ? t.value : today);
   updateClaimButtons();
-  if (APP.apiUrl) searchQueue();
+  // ไม่โหลดอัตโนมัติ — แสดง placeholder รอให้ผู้ใช้กดปุ่มค้นหา
+  const tbl = document.getElementById('queue-table');
+  if (tbl && !queueRows.length) {
+    tbl.innerHTML = '<div style="padding:48px;text-align:center;color:#8b99a9;font-size:14px;">เลือกช่วงวันที่แล้วกดปุ่ม <b style="color:#2563a8;">ค้นหา</b> เพื่อแสดงข้อมูล</div>';
+  }
 }
 
 async function searchQueue() {
@@ -1144,18 +1164,24 @@ document.addEventListener('click', function(e) {
 function exportQueueExcel() {
   if (!queueRows.length) { alert('ไม่มีข้อมูลสำหรับ Export'); return; }
   const cols = [
-    ['id','ID'],['vn','VN'],['hn','HN'],['cid','เลขบัตรประชาชน'],['ptname','ชื่อ-สกุล'],
-    ['birthday','วันเกิด'],['age','อายุ'],['pttype','สิทธิ'],['onset','วันที่ฟอก'],
-    ['onset_time','เวลาเริ่ม'],['off_time','เวลาสิ้นสุด'],['pre_weight','น้ำหนักก่อน(kg)'],
-    ['pre_bps','SBP ก่อน'],['pre_bpd','DBP ก่อน'],['post_weight','น้ำหนักหลัง(kg)'],
-    ['post_bps','SBP หลัง'],['post_bpd','DBP หลัง'],['height','ส่วนสูง(cm)'],
-    ['creatinine','Creatinine'],['albumin','Albumin'],['ultrafiltration_l','UF(L)'],
-    ['urr','URR'],['ktv','KT/V'],['hb','Hb'],['hct','Hct'],
-    ['membrane','Membrane'],['dialyzer','Dialyzer'],['vascular_access','Vascular Access'],
-    ['cath','Cath'],['spec_cond','Spec Cond'],['patient_type','Patient Type'],
-    ['hd_mode','HD Mode'],['hd_claim','HD Claim(฿)'],['esa_epo','ESA/EPO'],
-    ['iv_iron','IV Iron'],['blood_flow_rate','Blood Flow'],['ultrafiltration_kg','UF(kg)'],
-    ['lowmolheparin','Low Mol Heparin'],['parnutr','Par Nutr'],['lab_xray','Lab/X-ray'],['humanalb','Human Alb'],
+    ['id','id'],['service_date','service_date'],['vn','vn'],['cid','เลขบัตรประชาชน'],
+    ['hn','hn'],['ptname','ptname'],['birthday','วันเกิด'],['age','อายุ'],
+    ['pttype','pttype'],['hipdata','hipdata'],['date_hd','date_hd'],
+    ['hd_sdate_date','hd_sdate_date'],['start_hh','start_hh'],
+    ['hd_edate_date','hd_edate_date'],['end_hh','end_hh'],
+    ['pre_weight','pre_weight'],['pre_bps','pre_bps'],['pre_bpd','pre_bpd'],
+    ['post_weight','post_weight'],['post_bps','post_bps'],['post_bpd','post_bpd'],
+    ['height','height'],['creatinine','creatinine'],['albumin','albumin'],
+    ['ultrafiltration_l','ultrafiltration_l'],['urr','urr'],['ktv','ktv'],
+    ['hb','hb'],['pre_bun','pre_bun'],['post_bun','post_bun'],
+    ['blood_flow','blood_flow'],['membrane','membrane'],['dialyzer','dialyzer'],
+    ['vascular_access','vascular_access'],['cath','cath'],['spec_cond','spec_cond'],
+    ['reason','reason'],['patient_type','patient_type'],
+    ['new_dialyze','new_dialyze'],['hd_mode','hd_mode'],['hct','hct'],
+    ['hd_claim','hd_claim'],['esa_epo','esa_epo'],['qty','qty'],['route','route'],
+    ['iv_iron','iv_iron'],['blood_flow_rate','blood_flow_rate'],
+    ['ultrafiltration_kg','ultrafiltration_kg'],['lowmolheparin','lowmolheparin'],
+    ['dbllumen','dbllumen'],['parnutr','parnutr'],['lab_xray','lab_xray'],['humanalb','humanalb'],
   ];
   const header = cols.map(c => `"${c[1]}"`).join(',');
   const body = queueRows.map(r => cols.map(c => `"${(r[c[0]]??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
