@@ -290,10 +290,10 @@
         <!-- Table -->
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
           <div style="overflow-x:auto;">
-            <div style="min-width:1860px;">
-              <div style="display:grid;grid-template-columns:36px 135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 140px 78px;gap:6px;padding:11px 18px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:11.5px;font-weight:700;color:#6b7a8d;letter-spacing:.3px;white-space:nowrap;">
+            <div style="min-width:4800px;">
+              <div id="queue-header" style="display:grid;grid-template-columns:36px 55px 90px 85px 130px 75px 170px 90px 48px 100px 75px 95px 95px 70px 95px 70px 75px 65px 65px 75px 65px 65px 62px 75px 70px 65px 58px 58px 55px 65px 65px 72px 88px 88px 95px 58px 78px 88px 88px 75px 72px 55px 88px 115px 52px 68px 72px 88px 72px 88px 68px 68px 68px 72px 130px 75px;gap:6px;padding:10px 18px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:10.5px;font-weight:700;color:#6b7a8d;letter-spacing:.3px;white-space:nowrap;">
                 <div style="display:flex;align-items:center;justify-content:center;"><input type="checkbox" id="chk-select-all" onchange="toggleSelectAll(this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>
-                <div>เลขบัตร</div><div>HN</div><div>ชื่อ-สกุล</div><div>อายุ</div><div>สิทธิ</div><div>วันที่ฟอก</div><div>เวลาเริ่ม</div><div>เวลาสิ้นสุด</div><div>น.ก่อน(kg)</div><div>น.หลัง(kg)</div><div>BP ก่อน</div><div>BP หลัง</div><div>UF(L)</div><div>URR</div><div>KT/V</div><div>ยอดเบิก</div><div>สถานะ</div><div style="text-align:right;">จัดการ</div>
+                <div>id</div><div>service_date</div><div>vn</div><div>เลขบัตร</div><div>HN</div><div>ชื่อ-สกุล</div><div>วันเกิด</div><div>อายุ</div><div>สิทธิ</div><div>hipdata</div><div>date_hd</div><div>hd_sdate</div><div>start_hh</div><div>hd_edate</div><div>end_hh</div><div>น.ก่อน(kg)</div><div>pre_bps</div><div>pre_bpd</div><div>น.หลัง(kg)</div><div>post_bps</div><div>post_bpd</div><div>height</div><div>creatinine</div><div>albumin</div><div>UF(L)</div><div>URR</div><div>KT/V</div><div>Hb</div><div>pre_bun</div><div>post_bun</div><div>blood_flow</div><div>membrane</div><div>dialyzer</div><div>vasc.access</div><div>cath</div><div>spec_cond</div><div>reason</div><div>pt_type</div><div>new_dial</div><div>hd_mode</div><div>Hct</div><div>hd_claim</div><div>esa_epo</div><div>qty</div><div>route</div><div>iv_iron</div><div>flow_rate</div><div>UF(kg)</div><div>low_mol_hep</div><div>dbllumen</div><div>parnutr</div><div>lab_xray</div><div>humanalb</div><div>สถานะ</div><div style="text-align:right;">จัดการ</div>
               </div>
               <div id="queue-table"><div style="padding:40px;text-align:center;color:#8b99a9;font-size:13.5px;">กรุณาเลือกวันที่และกดค้นหา</div></div>
             </div>
@@ -1208,36 +1208,71 @@ function renderQueue(rows) {
     review:    {label:'ยังไม่ยืนยัน',     color:'#c9821a', bg:'#fbf1de'},
   };
   const fmtN = v => (v != null && v !== '') ? v : '-';
-  const fmtBP = (s,d) => (s||d) ? `${s||'?'}/${d||'?'}` : '-';
   const fmtNum = (v,dec=1) => (v != null && v !== '') ? parseFloat(v).toFixed(dec) : '-';
-  const COLS = '36px 135px 80px 175px 48px 115px 95px 70px 70px 78px 78px 80px 80px 62px 58px 58px 105px 140px 78px';
+  const COLS = '36px 55px 90px 85px 130px 75px 170px 90px 48px 100px 75px 95px 95px 70px 95px 70px 75px 65px 65px 75px 65px 65px 62px 75px 70px 65px 58px 58px 55px 65px 65px 72px 88px 88px 95px 58px 78px 88px 88px 75px 72px 55px 88px 115px 52px 68px 72px 88px 72px 88px 68px 68px 68px 72px 130px 75px';
   tbl.innerHTML = rows.map((r,i) => {
     const isConfirmed = confirmedVns.has(r.vn);
     const isSelected  = selectedVns.has(r.vn);
     const stKey = isConfirmed ? 'confirmed' : 'review';
     const st = stMap[stKey] || stMap.review;
-    const claim = r.hd_claim ? `฿${parseFloat(r.hd_claim).toLocaleString()}` : '-';
     const rowBg = isSelected ? 'background:#eef4fd;' : isConfirmed ? 'background:#f4fbf7;' : (i%2===1 ? 'background:#fafbfc;' : '');
-    return `<div style="display:grid;grid-template-columns:${COLS};gap:6px;padding:11px 18px;border-bottom:1px solid #eef1f5;align-items:center;font-size:12.5px;${rowBg}white-space:nowrap;">
-      <div style="display:flex;align-items:center;justify-content:center;">
-        <input type="checkbox" data-vn="${r.vn}" ${isSelected?'checked':''} onchange="toggleSelectRow('${r.vn}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;">
-      </div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.cid||''}">${fmtN(r.cid)}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#33465c;">${fmtN(r.hn)}</div>
+    const mn = 'font-family:\'IBM Plex Mono\',monospace;font-size:11px;';
+    const nr = 'text-align:right;color:#55677d;font-size:12px;';
+    return `<div style="display:grid;grid-template-columns:${COLS};gap:6px;padding:8px 18px;border-bottom:1px solid #eef1f5;align-items:center;font-size:12px;${rowBg}white-space:nowrap;">
+      <div style="display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${r.vn}" ${isSelected?'checked':''} onchange="toggleSelectRow('${r.vn}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>
+      <div style="${mn}color:#aab4bf;">${fmtN(r.id)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.service_date)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.vn)}</div>
+      <div style="${mn}color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.cid||''}">${fmtN(r.cid)}</div>
+      <div style="${mn}color:#33465c;">${fmtN(r.hn)}</div>
       <div style="color:#1c2e44;font-weight:500;overflow:hidden;text-overflow:ellipsis;" title="${r.ptname||''}">${fmtN(r.ptname)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.birthday)}</div>
       <div style="text-align:center;color:#55677d;">${fmtN(r.age)}</div>
-      <div style="font-size:11.5px;color:#6b7a8d;overflow:hidden;text-overflow:ellipsis;" title="${r.pttype||''}">${fmtN(r.pttype)}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatThaiDate(r.onset)}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatTime(r.onset_time)}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#55677d;">${formatTime(r.off_time)}</div>
-      <div style="text-align:right;color:#1c2e44;">${fmtNum(r.pre_weight)}</div>
-      <div style="text-align:right;color:#1c2e44;">${fmtNum(r.post_weight)}</div>
-      <div style="text-align:center;font-size:11.5px;color:#2f5d97;">${fmtBP(r.pre_bps,r.pre_bpd)}</div>
-      <div style="text-align:center;font-size:11.5px;color:#2f5d97;">${fmtBP(r.post_bps,r.post_bpd)}</div>
-      <div style="text-align:right;color:#55677d;">${fmtNum(r.ultrafiltration_l)}</div>
-      <div style="text-align:right;color:#55677d;">${fmtNum(r.urr)}</div>
-      <div style="text-align:right;color:#55677d;">${fmtNum(r.ktv,2)}</div>
-      <div style="font-weight:600;color:#0d2742;">${claim}</div>
+      <div style="font-size:11px;color:#6b7a8d;overflow:hidden;text-overflow:ellipsis;" title="${r.pttype||''}">${fmtN(r.pttype)}</div>
+      <div style="font-size:11px;color:#55677d;">${fmtN(r.hipdata)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.date_hd)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.hd_sdate_date)}</div>
+      <div style="${mn}color:#55677d;">${formatTime(r.start_hh)}</div>
+      <div style="${mn}color:#55677d;">${fmtN(r.hd_edate_date)}</div>
+      <div style="${mn}color:#55677d;">${formatTime(r.end_hh)}</div>
+      <div style="${nr}">${fmtNum(r.pre_weight)}</div>
+      <div style="${nr}color:#2f5d97;">${fmtN(r.pre_bps)}</div>
+      <div style="${nr}color:#2f5d97;">${fmtN(r.pre_bpd)}</div>
+      <div style="${nr}color:#1c2e44;">${fmtNum(r.post_weight)}</div>
+      <div style="${nr}color:#2f5d97;">${fmtN(r.post_bps)}</div>
+      <div style="${nr}color:#2f5d97;">${fmtN(r.post_bpd)}</div>
+      <div style="${nr}">${fmtN(r.height)}</div>
+      <div style="${nr}">${fmtN(r.creatinine)}</div>
+      <div style="${nr}">${fmtN(r.albumin)}</div>
+      <div style="${nr}">${fmtNum(r.ultrafiltration_l)}</div>
+      <div style="${nr}">${fmtN(r.urr)}</div>
+      <div style="${nr}">${fmtNum(r.ktv,2)}</div>
+      <div style="${nr}">${fmtN(r.hb)}</div>
+      <div style="${nr}">${fmtN(r.pre_bun)}</div>
+      <div style="${nr}">${fmtN(r.post_bun)}</div>
+      <div style="${nr}">${fmtN(r.blood_flow)}</div>
+      <div style="font-size:11px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.membrane||''}">${fmtN(r.membrane)}</div>
+      <div style="font-size:11px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.dialyzer||''}">${fmtN(r.dialyzer)}</div>
+      <div style="font-size:11px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.vascular_access||''}">${fmtN(r.vascular_access)}</div>
+      <div style="text-align:center;font-size:11px;color:#55677d;">${fmtN(r.cath)}</div>
+      <div style="font-size:11px;color:#55677d;">${fmtN(r.spec_cond)}</div>
+      <div style="font-size:11px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.reason||''}">${fmtN(r.reason)}</div>
+      <div style="font-size:11px;color:#55677d;">${fmtN(r.patient_type)}</div>
+      <div style="text-align:center;font-size:11px;color:#55677d;">${fmtN(r.new_dialyze)}</div>
+      <div style="font-size:11px;color:#55677d;">${fmtN(r.hd_mode)}</div>
+      <div style="${nr}">${fmtN(r.hct)}</div>
+      <div style="${nr}font-weight:600;color:#0d2742;">${r.hd_claim ? '฿'+parseFloat(r.hd_claim).toLocaleString() : '-'}</div>
+      <div style="font-size:11px;color:#55677d;overflow:hidden;text-overflow:ellipsis;" title="${r.esa_epo||''}">${fmtN(r.esa_epo)}</div>
+      <div style="${nr}">${fmtN(r.qty)}</div>
+      <div style="font-size:11px;color:#55677d;">${fmtN(r.route)}</div>
+      <div style="${nr}">${fmtN(r.iv_iron)}</div>
+      <div style="${nr}">${fmtN(r.blood_flow_rate)}</div>
+      <div style="${nr}">${fmtNum(r.ultrafiltration_kg)}</div>
+      <div style="${nr}">${fmtN(r.lowmolheparin)}</div>
+      <div style="text-align:center;font-size:11px;color:#55677d;">${fmtN(r.dbllumen)}</div>
+      <div style="${nr}">${fmtN(r.parnutr)}</div>
+      <div style="${nr}">${fmtN(r.lab_xray)}</div>
+      <div style="${nr}">${fmtN(r.humanalb)}</div>
       <div><span style="background:${st.bg};color:${st.color};font-size:11px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span></div>
       <div style="text-align:right;"><button class="btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="navigate('detail')">ตรวจสอบ</button></div>
     </div>`;
