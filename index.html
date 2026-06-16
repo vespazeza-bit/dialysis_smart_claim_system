@@ -847,17 +847,19 @@ async function enrichQueueData(rows) {
   WHERE lh.vn IN (${vnList})
   GROUP BY lh.vn`;
 
-  /* HD clinical fields: clinic_hd_service + opdscreen (height) + membrane join */
+  /* HD clinical fields: clinic_hd_service + opdscreen (height) + membrane + vascular access */
   const hdSQL = `SELECT sv.vn,
     sv.machine_flow AS blood_flow_rate,
     sv.machine_flow AS blood_flow,
     sv.clinic_hd_dialyzer_id AS dialyzer,
     mt.membrane_type_name AS membrane,
+    vss.clinic_hd_vss_type_name AS vascular_access,
     ops.height
   FROM clinic_hd_service sv
   LEFT JOIN opdscreen ops ON ops.vn=sv.vn
   LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
   LEFT JOIN membrane_type mt ON mt.membrane_type_id=cd.membrane_type_id
+  LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
   WHERE sv.vn IN (${vnList})`;
 
   /* Billing: total charges from opitemrece */
