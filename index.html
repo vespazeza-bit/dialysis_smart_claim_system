@@ -746,7 +746,66 @@ function buildQueueSQL(from, to, pttype, clinic) {
   let where = `v.vstdate BETWEEN '${from}' AND '${to}'`;
   if (clinic) where += ` AND c.clinic='${esc(clinic)}'`;
   if (pttype) where += ` AND pe.pttype='${esc(pttype)}'`;
-  return `SELECT sv.clinic_hd_service_id AS id,sv.vn,p.cid,sv.hn,CONCAT(p.pname,p.fname,p.lname) AS ptname,p.birthday,'' AS age,'' AS pttype,'' AS hipdata,'' AS date_hd,sv.service_date AS onset,'' AS onset_time,'' AS off_time,sv.weight_pre_kgs AS pre_weight,NULL AS pre_bps,NULL AS pre_bpd,sv.weight_post_kgs AS post_weight,NULL AS post_bps,NULL AS post_bpd,NULL AS height,NULL AS creatinine,NULL AS albumin,NULL AS ultrafiltration_l,NULL AS urr,NULL AS ktv,NULL AS hb,NULL AS pre_dialysis_bun,NULL AS post_dialysis_bun,NULL AS blood_flow,NULL AS membrane,NULL AS dialyzer,NULL AS vascular_access,NULL AS cath,NULL AS spec_cond,NULL AS patient_type,NULL AS new_dialyze,NULL AS hd_mode,NULL AS hct,NULL AS hd_claim,NULL AS esa_epo,NULL AS qty,NULL AS route,NULL AS iv_iron,NULL AS blood_flow_rate,NULL AS ultrafiltration_kg,NULL AS lowmolheparin,NULL AS dbllumen,NULL AS parnutr,NULL AS lab_xray,NULL AS humanalb FROM clinic_hd_service sv INNER JOIN patient p ON p.hn=sv.hn INNER JOIN ovst v ON v.vn=sv.vn WHERE ${where}`;
+  return `SELECT
+    MAX(sv.clinic_hd_service_id) AS id,
+    v.vn,
+    MAX(p.cid) AS cid,
+    MAX(v.hn) AS hn,
+    MAX(CONCAT(p.pname,p.fname,p.lname)) AS ptname,
+    MAX(p.birthday) AS birthday,
+    MAX(st.age_y) AS age,
+    MAX(pe.name) AS pttype,
+    MAX(pe.hipdata_code) AS hipdata,
+    '' AS date_hd,
+    MAX(sv.service_date) AS onset,
+    MAX(sv.service_time) AS onset_time,
+    MAX(sv.session_off_time) AS off_time,
+    MAX(sv.weight_pre_kgs) AS pre_weight,
+    NULL AS pre_bps,
+    NULL AS pre_bpd,
+    MAX(sv.weight_post_kgs) AS post_weight,
+    NULL AS post_bps,
+    NULL AS post_bpd,
+    NULL AS height,
+    NULL AS creatinine,
+    NULL AS albumin,
+    MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
+    NULL AS urr,
+    NULL AS ktv,
+    NULL AS hb,
+    NULL AS pre_dialysis_bun,
+    NULL AS post_dialysis_bun,
+    NULL AS blood_flow,
+    NULL AS membrane,
+    NULL AS dialyzer,
+    NULL AS vascular_access,
+    NULL AS cath,
+    NULL AS spec_cond,
+    NULL AS patient_type,
+    MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
+    'Chronic' AS hd_mode,
+    NULL AS hct,
+    NULL AS hd_claim,
+    NULL AS esa_epo,
+    NULL AS qty,
+    NULL AS route,
+    NULL AS iv_iron,
+    NULL AS blood_flow_rate,
+    MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
+    NULL AS lowmolheparin,
+    '' AS dbllumen,
+    NULL AS parnutr,
+    NULL AS lab_xray,
+    NULL AS humanalb
+  FROM clinic_hd_service sv
+  INNER JOIN ovst v ON v.vn=sv.vn
+  INNER JOIN patient p ON p.hn=v.hn
+  INNER JOIN vn_stat st ON st.vn=v.vn
+  INNER JOIN visit_pttype vp ON vp.vn=v.vn
+  INNER JOIN pttype pe ON pe.pttype=vp.pttype
+  INNER JOIN clinicmember c ON c.hn=v.hn
+  WHERE ${where}
+  GROUP BY v.vn`;
 }
 
 async function loadQueueDropdowns(from, to) {
