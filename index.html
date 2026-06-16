@@ -787,7 +787,8 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
-    'Chronic' AS hd_mode
+    'Chronic' AS hd_mode,
+    CASE WHEN LENGTH(v.vn)<12 THEN 'OPD' ELSE 'IPD' END AS patient_type
   FROM clinic_hd_service sv
   INNER JOIN ovst v ON v.vn=sv.vn
   INNER JOIN patient p ON p.hn=v.hn
@@ -955,7 +956,7 @@ async function enrichQueueData(rows) {
       reason:           hd.reason           ?? null,
       cath:             null,
       spec_cond:        hd.spec_cond        ?? null,
-      patient_type:     null,
+      patient_type:     r.patient_type      ?? null,
       // --- enriched: billing ---
       hd_claim:         bill.hd_claim       ?? null,
       lab_xray:         null,
