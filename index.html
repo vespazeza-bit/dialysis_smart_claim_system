@@ -1246,20 +1246,39 @@ async function executeSqlViaApi(sql) {
   const baseUrl  = `${APP.apiUrl}/api/sql`;
   const appParam = 'app=BMS.Dashboard.React';
   const getUrl   = `${baseUrl}?${appParam}&sql=${encoded}`;
-  const headers  = { Authorization: `Bearer ${APP.apiAuthKey}` };
+  const authHdr  = { Authorization: `Bearer ${APP.apiAuthKey}` };
 
   let res;
-  try {
-    res = await fetch(getUrl, { headers });
-  } catch (_getErr) {
+  const isLocal = ['localhost','127.0.0.1'].includes(window.location.hostname);
+  if (isLocal) {
+    // Route through local proxy server to avoid CORS block from localhost origin
     try {
-      res = await fetch(`${baseUrl}?${appParam}`, {
+      res = await fetch('http://localhost:8765/sql-proxy', {
         method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `sql=${encoded}`,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-BMS-Target': APP.apiUrl,
+          'X-BMS-Auth':   `Bearer ${APP.apiAuthKey}`,
+        },
+        body: `${appParam}&sql=${encoded}`,
       });
-    } catch (_postErr) {
-      throw new Error(`ไม่สามารถเชื่อมต่อ API ได้ — ตรวจสอบว่า HOSxP BMS server ทำงานอยู่`);
+    } catch (_proxyErr) {
+      throw new Error('ไม่สามารถเชื่อมต่อ local proxy ได้ — กรุณารีสตาร์ทเซิร์ฟเวอร์');
+    }
+  } else {
+    // Direct GET (file:// origin or same-origin deployment — no CORS issue)
+    try {
+      res = await fetch(getUrl, { headers: authHdr });
+    } catch (_getErr) {
+      try {
+        res = await fetch(`${baseUrl}?${appParam}`, {
+          method: 'POST',
+          headers: { ...authHdr, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `sql=${encoded}`,
+        });
+      } catch (_postErr) {
+        throw new Error(`ไม่สามารถเชื่อมต่อ API ได้ — ตรวจสอบว่า HOSxP BMS server ทำงานอยู่`);
+      }
     }
   }
 
