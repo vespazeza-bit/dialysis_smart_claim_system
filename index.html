@@ -756,7 +756,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(st.age_y) AS age,
     MAX(pe.name) AS pttype,
     MAX(pe.hipdata_code) AS hipdata,
-    '' AS date_hd,
+    MAX(sv.service_date) AS date_hd,
     MAX(sv.service_date) AS onset,
     MAX(sv.service_time) AS onset_time,
     MAX(sv.session_off_time) AS off_time,
@@ -766,7 +766,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_post_kgs) AS post_weight,
     NULL AS post_bps,
     NULL AS post_bpd,
-    NULL AS height,
+    MAX(st.height) AS height,
     NULL AS creatinine,
     NULL AS albumin,
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_l,
@@ -806,6 +806,122 @@ function buildQueueSQL(from, to, pttype, clinic) {
   INNER JOIN clinicmember c ON c.hn=v.hn
   WHERE ${where}
   GROUP BY v.vn`;
+}
+
+/* Enrich base rows with BP, labs, HD clinical fields, billing, meds.
+   Every sub-query is wrapped in .catch(() => []) so one failure never
+   breaks the whole page — those fields simply remain null.             */
+async function enrichQueueData(rows) {
+  if (!rows.length) return rows;
+  const vnList = rows.map(r => `'${String(r.vn).replace(/'/g,"''")}'`).join(',');
+  const run    = sql => executeSqlViaApi(sql).catch(e => { console.warn('[enrich]', e.message); return []; });
+  const toMap  = (arr, k='vn') => Object.fromEntries((arr||[]).map(r => [r[k], r]));
+
+  /* BP: first VS record per session = pre, last = post */
+  const bpSQL = `SELECT sv.vn,
+    pv.bps AS pre_bps,pv.bpd AS pre_bpd,
+    xv.bps AS post_bps,xv.bpd AS post_bpd
+  FROM clinic_hd_service sv
+  LEFT JOIN (
+    SELECT vs.clinic_hd_service_id,bp.bps,bp.bpd
+    FROM clinic_hd_service_vs vs
+    INNER JOIN opdscreen_bp bp ON bp.opdscreen_bp_id=vs.clinic_hd_service_vs_opds_bp
+    WHERE vs.clinic_hd_service_vs_id=(
+      SELECT MIN(z.clinic_hd_service_vs_id) FROM clinic_hd_service_vs z
+      WHERE z.clinic_hd_service_id=vs.clinic_hd_service_id)
+  ) pv ON pv.clinic_hd_service_id=sv.clinic_hd_service_id
+  LEFT JOIN (
+    SELECT vs.clinic_hd_service_id,bp.bps,bp.bpd
+    FROM clinic_hd_service_vs vs
+    INNER JOIN opdscreen_bp bp ON bp.opdscreen_bp_id=vs.clinic_hd_service_vs_opds_bp
+    WHERE vs.clinic_hd_service_vs_id=(
+      SELECT MAX(z.clinic_hd_service_vs_id) FROM clinic_hd_service_vs z
+      WHERE z.clinic_hd_service_id=vs.clinic_hd_service_id)
+  ) xv ON xv.clinic_hd_service_id=sv.clinic_hd_service_id
+  WHERE sv.vn IN (${vnList})`;
+
+  /* Labs via lab_head + lab_order + lab_items */
+  const labSQL = `SELECT lh.vn,
+    MAX(CASE WHEN li.lab_items_name LIKE '%creatinine%' OR li.lab_items_name LIKE '%Creatinine%' THEN lo.lab_order_result END) AS creatinine,
+    MAX(CASE WHEN li.lab_items_name LIKE '%Albumin%' OR li.lab_items_name LIKE '%albumin%' THEN lo.lab_order_result END) AS albumin,
+    MAX(CASE WHEN li.lab_items_name LIKE '%Hb%' OR li.lab_items_name LIKE '%Hemoglobin%' OR li.lab_items_name LIKE '%hemoglobin%' THEN lo.lab_order_result END) AS hb,
+    MAX(CASE WHEN li.lab_items_name LIKE '%Hct%' OR li.lab_items_name LIKE '%Hematocrit%' THEN lo.lab_order_result END) AS hct,
+    MAX(CASE WHEN li.lab_items_name LIKE '%BUN%' OR li.lab_items_name LIKE '%Urea Nitrogen%' OR li.lab_items_name LIKE '%blood urea%' THEN lo.lab_order_result END) AS pre_dialysis_bun,
+    MAX(CASE WHEN li.lab_items_name LIKE '%URR%' THEN lo.lab_order_result END) AS urr,
+    MAX(CASE WHEN li.lab_items_name LIKE '%Kt%' OR li.lab_items_name LIKE '%KT/V%' OR li.lab_items_name LIKE '%KTV%' THEN lo.lab_order_result END) AS ktv
+  FROM lab_head lh
+  INNER JOIN lab_order lo ON lo.lab_head_id=lh.lab_head_id
+  INNER JOIN lab_items li ON li.lab_items_code=lo.lab_items_code
+  WHERE lh.vn IN (${vnList})
+  GROUP BY lh.vn`;
+
+  /* HD clinical fields direct from clinic_hd_service */
+  const hdSQL = `SELECT sv.vn,
+    sv.blood_flow_mlmin AS blood_flow_rate,
+    sv.dialyzer_type AS dialyzer,
+    sv.membrane_type AS membrane,
+    sv.vascular_access AS vascular_access,
+    sv.urr AS urr,
+    sv.kt_v AS ktv_calc
+  FROM clinic_hd_service sv
+  WHERE sv.vn IN (${vnList})`;
+
+  /* Billing: total charges from opitemrece */
+  const billSQL = `SELECT vn,SUM(sum_price) AS hd_claim
+  FROM opitemrece WHERE vn IN (${vnList}) GROUP BY vn`;
+
+  /* Meds: ESA/EPO, IV Iron, LMWH, Human Albumin */
+  const medSQL = `SELECT sv.vn,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS esa_epo,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%iron%' OR LOWER(d.name) LIKE '%ferinject%' OR LOWER(d.name) LIKE '%venofer%' OR LOWER(d.name) LIKE '%cosmofer%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS iv_iron,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%heparin%' AND (LOWER(d.name) LIKE '%low%' OR LOWER(d.name) LIKE '%lmwh%' OR LOWER(d.name) LIKE '%enox%' OR LOWER(d.name) LIKE '%nadr%') THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS lowmolheparin,
+    MAX(CASE WHEN LOWER(d.name) LIKE '%albumin%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS humanalb
+  FROM clinic_hd_service sv
+  INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id=sv.clinic_hd_service_id
+  INNER JOIN drugitems d ON d.icode=ml.icode
+  WHERE sv.vn IN (${vnList})
+  GROUP BY sv.vn`;
+
+  const [bpRows,labRows,hdRows,billRows,medRows] = await Promise.all([
+    run(bpSQL), run(labSQL), run(hdSQL), run(billSQL), run(medSQL),
+  ]);
+
+  const bpMap   = toMap(bpRows);
+  const labMap  = toMap(labRows);
+  const hdMap   = toMap(hdRows);
+  const billMap = toMap(billRows);
+  const medMap  = toMap(medRows);
+
+  return rows.map(r => {
+    const bp   = bpMap[r.vn]   || {};
+    const lab  = labMap[r.vn]  || {};
+    const hd   = hdMap[r.vn]   || {};
+    const bill = billMap[r.vn] || {};
+    const med  = medMap[r.vn]  || {};
+    return {
+      ...r,
+      pre_bps:          bp.pre_bps            ?? null,
+      pre_bpd:          bp.pre_bpd            ?? null,
+      post_bps:         bp.post_bps           ?? null,
+      post_bpd:         bp.post_bpd           ?? null,
+      creatinine:       lab.creatinine        ?? null,
+      albumin:          lab.albumin           ?? null,
+      hb:               lab.hb                ?? null,
+      hct:              lab.hct               ?? null,
+      pre_dialysis_bun: lab.pre_dialysis_bun  ?? null,
+      urr:              lab.urr  ?? hd.urr    ?? null,
+      ktv:              lab.ktv  ?? hd.ktv_calc ?? null,
+      blood_flow_rate:  hd.blood_flow_rate    ?? null,
+      dialyzer:         hd.dialyzer           ?? null,
+      membrane:         hd.membrane           ?? null,
+      vascular_access:  hd.vascular_access    ?? null,
+      hd_claim:         bill.hd_claim         ?? null,
+      esa_epo:          med.esa_epo           ?? null,
+      iv_iron:          med.iv_iron           ?? null,
+      lowmolheparin:    med.lowmolheparin     ?? null,
+      humanalb:         med.humanalb          ?? null,
+    };
+  });
 }
 
 async function loadQueueDropdowns(from, to) {
@@ -865,7 +981,7 @@ async function searchQueue() {
   try {
     const sql  = buildQueueSQL(from, to, pttype, clinic);
     const rows = await executeSqlViaApi(sql);
-    queueRows  = rows || [];
+    queueRows  = await enrichQueueData(rows || []);
     selectedVns.clear();
 
     // กรองตามสถานะ
