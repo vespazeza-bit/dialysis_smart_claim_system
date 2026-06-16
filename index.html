@@ -863,15 +863,15 @@ async function enrichQueueData(rows) {
 
   /* Meds: ESA/EPO, IV Iron, LMWH, Human Albumin */
   const medSQL = `SELECT sv.vn,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN d.name END) AS esa_epo,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN ml.qty END) AS qty,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%erythropoietin%' OR LOWER(d.name) LIKE '%epoetin%' OR LOWER(d.name) LIKE '%darbepoetin%' OR LOWER(d.name) LIKE '%mircera%' THEN ml.route END) AS route,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%iron%' OR LOWER(d.name) LIKE '%ferinject%' OR LOWER(d.name) LIKE '%venofer%' OR LOWER(d.name) LIKE '%cosmofer%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS iv_iron,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%heparin%' AND (LOWER(d.name) LIKE '%low%' OR LOWER(d.name) LIKE '%lmwh%' OR LOWER(d.name) LIKE '%enox%' OR LOWER(d.name) LIKE '%nadr%') THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS lowmolheparin,
-    MAX(CASE WHEN LOWER(d.name) LIKE '%albumin%' THEN CONCAT(ml.qty,' ',ml.unit_code) END) AS humanalb
+    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%erythropoietin%' OR LOWER(mt.dmis_name) LIKE '%epoetin%' OR LOWER(mt.dmis_name) LIKE '%darbepoetin%' OR LOWER(mt.dmis_name) LIKE '%mircera%' THEN mt.dmis_name END) AS esa_epo,
+    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%erythropoietin%' OR LOWER(mt.dmis_name) LIKE '%epoetin%' OR LOWER(mt.dmis_name) LIKE '%darbepoetin%' OR LOWER(mt.dmis_name) LIKE '%mircera%' THEN ml.qty END) AS qty,
+    NULL AS route,
+    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%iron%' OR LOWER(mt.dmis_name) LIKE '%ferinject%' OR LOWER(mt.dmis_name) LIKE '%venofer%' OR LOWER(mt.dmis_name) LIKE '%cosmofer%' THEN ml.qty END) AS iv_iron,
+    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%heparin%' AND (LOWER(mt.dmis_name) LIKE '%low%' OR LOWER(mt.dmis_name) LIKE '%lmwh%' OR LOWER(mt.dmis_name) LIKE '%enox%' OR LOWER(mt.dmis_name) LIKE '%nadr%') THEN ml.qty END) AS lowmolheparin,
+    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%albumin%' THEN ml.qty END) AS humanalb
   FROM clinic_hd_service sv
   INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id=sv.clinic_hd_service_id
-  INNER JOIN drugitems d ON d.icode=ml.icode
+  INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id=ml.clinic_hd_med_type_id
   WHERE sv.vn IN (${vnList})
   GROUP BY sv.vn`;
 
