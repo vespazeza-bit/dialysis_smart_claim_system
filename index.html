@@ -801,16 +801,24 @@ function buildQueueSQL(from, to, pttype, clinic) {
 }
 
 /* Enrich base rows with BP, labs, HD clinical fields, billing, meds.
-   Every sub-query is wrapped in .catch(() => []) so one failure never
-   breaks the whole page — those fields simply remain null.             */
+   Sub-queries run in VN chunks to stay under nginx ~1500-char URL limit.
+   Every chunk is wrapped in .catch(() => []) so failures return [] silently. */
 async function enrichQueueData(rows) {
   if (!rows.length) return rows;
-  const vnList = rows.map(r => `'${String(r.vn).replace(/'/g,"''")}'`).join(',');
-  const run    = sql => executeSqlViaApi(sql).catch(e => { console.warn('[enrich]', e.message); return []; });
-  const toMap  = (arr, k='vn') => Object.fromEntries((arr||[]).map(r => [r[k], r]));
 
-  /* BP: first VS record per session = pre, last = post */
-  const bpSQL = `SELECT sv.vn,
+  const run   = sql => executeSqlViaApi(sql).catch(e => { console.warn('[enrich]', e.message); return []; });
+  const toMap = (arr, k='vn') => Object.fromEntries((arr||[]).map(r => [r[k], r]));
+  const mkVn  = arr => arr.map(r => `'${String(r.vn).replace(/'/g,"''")}'`).join(',');
+
+  /* Split rows into n-size chunks, run builder for each chunk in parallel, flatten */
+  const chunked = (builder, n) => {
+    const chunks = [];
+    for (let i = 0; i < rows.length; i += n) chunks.push(rows.slice(i, i + n));
+    return Promise.all(chunks.map(c => run(builder(mkVn(c))))).then(a => a.flat());
+  };
+
+  /* BP: first VS record per session = pre, last = post — chunk 15 (large subquery) */
+  const bpRows = await chunked(vn => `SELECT sv.vn,
     pv.bps AS pre_bps,pv.bpd AS pre_bpd,
     xv.bps AS post_bps,xv.bpd AS post_bpd
   FROM clinic_hd_service sv
@@ -830,10 +838,10 @@ async function enrichQueueData(rows) {
       SELECT MAX(z.clinic_hd_service_vs_id) FROM clinic_hd_service_vs z
       WHERE z.clinic_hd_service_id=vs.clinic_hd_service_id)
   ) xv ON xv.clinic_hd_service_id=sv.clinic_hd_service_id
-  WHERE sv.vn IN (${vnList})`;
+  WHERE sv.vn IN (${vn})`, 15);
 
-  /* Labs via lab_head + lab_order + lab_items */
-  const labSQL = `SELECT lh.vn,
+  /* Labs via lab_head + lab_order + lab_items — chunk 20 */
+  const labRows = await chunked(vn => `SELECT lh.vn,
     MAX(CASE WHEN li.lab_items_name LIKE '%creatinine%' OR li.lab_items_name LIKE '%Creatinine%' THEN lo.lab_order_result END) AS creatinine,
     MAX(CASE WHEN li.lab_items_name LIKE '%Albumin%' OR li.lab_items_name LIKE '%albumin%' THEN lo.lab_order_result END) AS albumin,
     MAX(CASE WHEN li.lab_items_name LIKE '%Hb%' OR li.lab_items_name LIKE '%Hemoglobin%' OR li.lab_items_name LIKE '%hemoglobin%' THEN lo.lab_order_result END) AS hb,
@@ -845,12 +853,12 @@ async function enrichQueueData(rows) {
   FROM lab_head lh
   INNER JOIN lab_order lo ON lo.lab_head_id=lh.lab_head_id
   INNER JOIN lab_items li ON li.lab_items_code=lo.lab_items_code
-  WHERE lh.vn IN (${vnList})
-  GROUP BY lh.vn`;
+  WHERE lh.vn IN (${vn})
+  GROUP BY lh.vn`, 20);
 
-  /* HD clinical fields — CASE spec_cond mapped in JS to keep URL short */
+  /* HD clinical fields — CASE spec_cond mapped in JS; chunk 20 */
   const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
-  const hdSQL = `SELECT sv.vn,
+  const hdRows = await chunked(vn => `SELECT sv.vn,
     sv.machine_flow AS blood_flow_rate,
     sv.machine_flow AS blood_flow,
     sv.clinic_hd_dialyzer_id AS dialyzer,
@@ -865,35 +873,41 @@ async function enrichQueueData(rows) {
   LEFT JOIN membrane_type mt ON mt.membrane_type_id=cd.membrane_type_id
   LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
   LEFT JOIN hd_short_dialysis_reason sdr ON sdr.hd_short_dialysis_reason_id=sv.hd_short_dialysis_reason_id
-  WHERE sv.vn IN (${vnList})`;
+  WHERE sv.vn IN (${vn})`, 20);
 
-  /* Billing: total charges from opitemrece */
-  const billSQL = `SELECT vn,SUM(sum_price) AS hd_claim
-  FROM opitemrece WHERE vn IN (${vnList}) GROUP BY vn`;
+  /* Billing: total charges from opitemrece — chunk 40 (short query) */
+  const billRows = await chunked(vn => `SELECT vn,SUM(sum_price) AS hd_claim
+  FROM opitemrece WHERE vn IN (${vn}) GROUP BY vn`, 40);
 
-  /* Meds: ESA/EPO, IV Iron, LMWH, Human Albumin */
-  const medSQL = `SELECT sv.vn,
-    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%erythropoietin%' OR LOWER(mt.dmis_name) LIKE '%epoetin%' OR LOWER(mt.dmis_name) LIKE '%darbepoetin%' OR LOWER(mt.dmis_name) LIKE '%mircera%' THEN mt.dmis_name END) AS esa_epo,
-    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%erythropoietin%' OR LOWER(mt.dmis_name) LIKE '%epoetin%' OR LOWER(mt.dmis_name) LIKE '%darbepoetin%' OR LOWER(mt.dmis_name) LIKE '%mircera%' THEN ml.qty END) AS qty,
-    NULL AS route,
-    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%iron%' OR LOWER(mt.dmis_name) LIKE '%ferinject%' OR LOWER(mt.dmis_name) LIKE '%venofer%' OR LOWER(mt.dmis_name) LIKE '%cosmofer%' THEN ml.qty END) AS iv_iron,
-    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%heparin%' AND (LOWER(mt.dmis_name) LIKE '%low%' OR LOWER(mt.dmis_name) LIKE '%lmwh%' OR LOWER(mt.dmis_name) LIKE '%enox%' OR LOWER(mt.dmis_name) LIKE '%nadr%') THEN ml.qty END) AS lowmolheparin,
-    MAX(CASE WHEN LOWER(mt.dmis_name) LIKE '%albumin%' THEN ml.qty END) AS humanalb
+  /* Meds: get all HD meds as raw rows, classify by pattern in JS (avoids long LIKE URL) — chunk 30 */
+  const medRaw = await chunked(vn => `SELECT sv.vn,mt.dmis_name,ml.qty
   FROM clinic_hd_service sv
   INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id=sv.clinic_hd_service_id
   INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id=ml.clinic_hd_med_type_id
-  WHERE sv.vn IN (${vnList})
-  GROUP BY sv.vn`;
+  WHERE sv.vn IN (${vn})`, 30);
 
-  const [bpRows,labRows,hdRows,billRows,medRows] = await Promise.all([
-    run(bpSQL), run(labSQL), run(hdSQL), run(billSQL), run(medSQL),
-  ]);
+  /* Classify med rows in JS */
+  const medMap = {};
+  for (const row of medRaw) {
+    if (!medMap[row.vn]) medMap[row.vn] = {};
+    const m = medMap[row.vn];
+    const n = (row.dmis_name || '').toLowerCase();
+    if (!m.esa_epo && (n.includes('erythropoietin') || n.includes('epoetin') || n.includes('darbepoetin') || n.includes('mircera'))) {
+      m.esa_epo = row.dmis_name; m.qty = row.qty;
+    }
+    if (!m.iv_iron && (n.includes('iron') || n.includes('ferinject') || n.includes('venofer') || n.includes('cosmofer'))) {
+      m.iv_iron = row.qty;
+    }
+    if (!m.lowmolheparin && n.includes('heparin') && (n.includes('low') || n.includes('lmwh') || n.includes('enox') || n.includes('nadr'))) {
+      m.lowmolheparin = row.qty;
+    }
+    if (!m.humanalb && n.includes('albumin')) { m.humanalb = row.qty; }
+  }
 
   const bpMap   = toMap(bpRows);
   const labMap  = toMap(labRows);
   const hdMap   = toMap(hdRows);
   const billMap = toMap(billRows);
-  const medMap  = toMap(medRows);
 
   return rows.map(r => {
     const bp   = bpMap[r.vn]   || {};
