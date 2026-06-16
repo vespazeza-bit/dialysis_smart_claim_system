@@ -1250,17 +1250,15 @@ async function executeSqlViaApi(sql) {
 
   let res;
   try {
-    // Try POST first — avoids CORS preflight issues and URL-length limits
-    res = await fetch(baseUrl, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `${appParam}&sql=${encoded}`,
-    });
-  } catch (_postErr) {
-    // POST failed → fall back to GET
+    res = await fetch(getUrl, { headers });
+  } catch (_getErr) {
     try {
-      res = await fetch(getUrl, { headers });
-    } catch (_getErr) {
+      res = await fetch(`${baseUrl}?${appParam}`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `sql=${encoded}`,
+      });
+    } catch (_postErr) {
       throw new Error(`ไม่สามารถเชื่อมต่อ API ได้ — ตรวจสอบว่า HOSxP BMS server ทำงานอยู่`);
     }
   }
