@@ -1245,7 +1245,7 @@ async function executeSqlViaApi(sql) {
   const encoded  = encodeURIComponent(minified);
   const baseUrl  = `${APP.apiUrl}/api/sql`;
   const appParam = 'app=BMS.Dashboard.React';
-  const getUrl   = `${baseUrl}?sql=${encoded}&${appParam}`;
+  const getUrl   = `${baseUrl}?${appParam}&sql=${encoded}`;
   const headers  = { Authorization: `Bearer ${APP.apiAuthKey}` };
 
   let res;
