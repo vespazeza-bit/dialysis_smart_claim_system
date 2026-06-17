@@ -893,22 +893,34 @@ async function enrichQueueData(rows) {
   const billRows = await chunked(vn => `SELECT vn,SUM(sum_price) AS hd_claim
   FROM opitemrece WHERE vn IN (${vn}) GROUP BY vn`, 40);
 
-  /* Meds: get all HD meds as raw rows, classify by pattern in JS (avoids long LIKE URL) — chunk 30 */
+  /* Meds: GROUP_CONCAT esa_epo/qty/route per vn — chunk 25 */
+  const medAggRows = await chunked(vn => `SELECT sv.vn,
+    GROUP_CONCAT(DISTINCT mt.dmis_name SEPARATOR '\n') AS esa_epo,
+    GROUP_CONCAT(DISTINCT ml.qty SEPARATOR '\n') AS qty,
+    GROUP_CONCAT(DISTINCT r.clinic_hd_med_route_type_name SEPARATOR '\n') AS route
+  FROM clinic_hd_service sv
+  INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id = sv.clinic_hd_service_id
+  INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id = ml.clinic_hd_med_type_id
+  LEFT JOIN clinic_hd_med_route_type r ON r.clinic_hd_med_route_type_id = ml.clinic_hd_med_route_type_id
+  WHERE sv.vn IN (${vn})
+  GROUP BY sv.vn`, 25);
+
+  /* Meds: raw rows for iv_iron, lowmolheparin, humanalb — classify by pattern in JS — chunk 30 */
   const medRaw = await chunked(vn => `SELECT sv.vn,mt.dmis_name,ml.qty
   FROM clinic_hd_service sv
   INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id=sv.clinic_hd_service_id
   INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id=ml.clinic_hd_med_type_id
   WHERE sv.vn IN (${vn})`, 30);
 
-  /* Classify med rows in JS */
+  /* Build medMap: merge agg results then classify raw rows */
   const medMap = {};
+  for (const row of medAggRows) {
+    medMap[row.vn] = { esa_epo: row.esa_epo || null, qty: row.qty || null, route: row.route || null };
+  }
   for (const row of medRaw) {
     if (!medMap[row.vn]) medMap[row.vn] = {};
     const m = medMap[row.vn];
     const n = (row.dmis_name || '').toLowerCase();
-    if (!m.esa_epo && (n.includes('erythropoietin') || n.includes('epoetin') || n.includes('darbepoetin') || n.includes('mircera'))) {
-      m.esa_epo = row.dmis_name; m.qty = row.qty;
-    }
     if (!m.iv_iron && (n.includes('iron') || n.includes('ferinject') || n.includes('venofer') || n.includes('cosmofer'))) {
       m.iv_iron = row.qty;
     }
