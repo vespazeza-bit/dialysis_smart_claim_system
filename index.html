@@ -861,14 +861,16 @@ async function enrichQueueData(rows) {
   FROM opdscreen WHERE vn IN (${vn}) GROUP BY vn`, 40);
   const heightMap = toMap(heightRows);
 
-  /* HD simple: blood_flow, dialyzer, dch_type_id — no joins, very short — chunk 40 */
+  /* HD simple: blood_flow, dialyzer, dch_type_id — chunk 40 */
   const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
   const hdSimpleRows = await chunked(vn => `SELECT sv.vn,
     MAX(sv.machine_flow) AS blood_flow_rate,
     MAX(sv.machine_flow) AS blood_flow,
-    MAX(sv.clinic_hd_dialyzer_id) AS dialyzer,
+    MAX(dt.dialyzer_type_name) AS dialyzer,
     MAX(sv.clinic_hd_dch_type_id) AS dch_type_id
   FROM clinic_hd_service sv
+  LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id = sv.clinic_hd_dialyzer_id
+  LEFT JOIN dialyzer_type dt ON dt.dialyzer_type_id = di.dialyzer_type_id
   WHERE sv.vn IN (${vn})
   GROUP BY sv.vn`, 40);
 
