@@ -874,16 +874,18 @@ async function enrichQueueData(rows) {
   WHERE sv.vn IN (${vn})
   GROUP BY sv.vn`, 40);
 
-  /* HD lookup: membrane, vascular_access, reason — joins — chunk 25 */
+  /* HD lookup: membrane, vascular_access, reason — chunk 25 */
   const hdLookupRows = await chunked(vn => `SELECT sv.vn,
-    mt.membrane_type_name AS membrane,
+    (CASE WHEN mt.dmis_export='1' THEN mt.membrane_type_name
+          WHEN mt.dmis_export='2' THEN mt.membrane_type_name
+          WHEN mt.dmis_export='3' THEN mt.membrane_type_name ELSE NULL END) AS membrane,
     vss.clinic_hd_vss_type_name AS vascular_access,
     sdr.reason_name AS reason
   FROM clinic_hd_service sv
-  LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
-  LEFT JOIN membrane_type mt ON mt.membrane_type_id=cd.membrane_type_id
-  LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
-  LEFT JOIN hd_short_dialysis_reason sdr ON sdr.hd_short_dialysis_reason_id=sv.hd_short_dialysis_reason_id
+  LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id = sv.clinic_hd_dialyzer_id
+  LEFT JOIN membrane_type mt ON mt.membrane_type_id = cd.membrane_type_id
+  LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id = sv.clinic_hd_vss_type_id
+  LEFT JOIN hd_short_dialysis_reason sdr ON sdr.id = sv.hd_short_dialysis_reason_id
   WHERE sv.vn IN (${vn})
   GROUP BY sv.vn`, 25);
 
