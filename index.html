@@ -788,8 +788,7 @@ function buildQueueSQL(from, to, pttype, clinic) {
     MAX(sv.weight_pre_kgs)-MAX(sv.weight_post_kgs) AS ultrafiltration_kg,
     MAX(CASE WHEN sv.dialyzer_use_no>'1' THEN 'No' ELSE 'Yes' END) AS new_dialyze,
     'Chronic' AS hd_mode,
-    CASE WHEN LENGTH(v.vn)<12 THEN 'IPD' ELSE 'OPD' END AS patient_type,
-    MAX(st.height) AS height
+    CASE WHEN LENGTH(v.vn)<12 THEN 'IPD' ELSE 'OPD' END AS patient_type
   FROM clinic_hd_service sv
   INNER JOIN ovst v ON v.vn=sv.vn
   INNER JOIN patient p ON p.hn=v.hn
@@ -856,6 +855,11 @@ async function enrichQueueData(rows) {
   INNER JOIN lab_items li ON li.lab_items_code=lo.lab_items_code
   WHERE lh.vn IN (${vn})
   GROUP BY lh.vn`, 20);
+
+  /* Height from opdscreen — GROUP BY vn to collapse multiple VS records — chunk 40 */
+  const heightRows = await chunked(vn => `SELECT vn,MAX(height) AS height
+  FROM opdscreen WHERE vn IN (${vn}) GROUP BY vn`, 40);
+  const heightMap = toMap(heightRows);
 
   /* HD simple: blood_flow, dialyzer, dch_type_id — no joins, very short — chunk 40 */
   const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
@@ -958,7 +962,7 @@ async function enrichQueueData(rows) {
       post_bps:         bp.post_bps         ?? null,
       post_bpd:         bp.post_bpd         ?? null,
       // --- enriched: labs ---
-      height:           r.height            ?? null,
+      height:           (heightMap[r.vn]||{}).height ?? null,
       creatinine:       lab.creatinine      ?? null,
       albumin:          lab.albumin         ?? null,
       urr:              lab.urr  ?? hd.urr  ?? null,
