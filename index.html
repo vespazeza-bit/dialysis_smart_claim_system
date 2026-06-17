@@ -426,6 +426,7 @@ const TODAY_SUMMARY = [
 ];
 // queue rows fetched from API
 let queueRows = [];
+let confirmRows = [];
 let selectedVns = new Set();
 const FIELD_GROUPS = [
   { title:'ข้อมูลผู้ป่วยและสิทธิ', hint:'จากทะเบียนผู้ป่วย', accent:'#3f9b6d', headBg:'#eef7f1', countLabel:'7 ฟิลด์',
@@ -2107,8 +2108,10 @@ function confirmAvatar(name) {
 
 function openConfirmScreen() {
   if (!queueRows.length) { alert('กรุณาค้นหาข้อมูลก่อน'); return; }
+  if (!selectedVns.size) { alert('กรุณาเลือกรายการ'); return; }
+  confirmRows = queueRows.filter(r => selectedVns.has(r.vn));
   confirmStatuses = {};
-  queueRows.forEach(r => { confirmStatuses[r.vn] = 'pending'; });
+  confirmRows.forEach(r => { confirmStatuses[r.vn] = 'pending'; });
   confirmIndex = 0;
   const dtEl = document.getElementById('confirm-header-dt');
   if (dtEl) dtEl.textContent = confirmNowDT();
@@ -2124,9 +2127,9 @@ function closeConfirmScreen() {
 
 // Left panel: stats + case list
 function renderConfirmLeft() {
-  const total = queueRows.length;
-  const confirmed = queueRows.filter(r => confirmStatuses[r.vn] === 'confirmed').length;
-  const incomplete = queueRows.filter(r => confirmCompleteness(r).pct < 100).length;
+  const total = confirmRows.length;
+  const confirmed = confirmRows.filter(r => confirmStatuses[r.vn] === 'confirmed').length;
+  const incomplete = confirmRows.filter(r => confirmCompleteness(r).pct < 100).length;
   const waiting = total - confirmed;
 
   document.getElementById('confirm-total').textContent = total;
@@ -2150,7 +2153,7 @@ function renderConfirmLeft() {
 }
 
 function renderConfirmList() {
-  document.getElementById('confirm-list').innerHTML = queueRows.map((r, i) => {
+  document.getElementById('confirm-list').innerHTML = confirmRows.map((r, i) => {
     const { pct, missing } = confirmCompleteness(r);
     const isConfirmed = confirmStatuses[r.vn] === 'confirmed';
     const active = i === confirmIndex;
@@ -2177,7 +2180,7 @@ function renderConfirmList() {
 }
 
 function selectConfirmRow(idx, noScroll) {
-  if (idx < 0 || idx >= queueRows.length) return;
+  if (idx < 0 || idx >= confirmRows.length) return;
   confirmIndex = idx;
   renderConfirmList();
   renderConfirmDetail(idx);
@@ -2188,8 +2191,8 @@ function selectConfirmRow(idx, noScroll) {
 }
 
 function renderConfirmDetail(idx) {
-  if (!queueRows[idx]) return;
-  const r = queueRows[idx];
+  if (!confirmRows[idx]) return;
+  const r = confirmRows[idx];
   const { pct, missing } = confirmCompleteness(r);
   const isConfirmed = confirmStatuses[r.vn] === 'confirmed';
 
@@ -2206,8 +2209,8 @@ function renderConfirmDetail(idx) {
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="background:#f0871f;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;color:#fff;">${r.pttype||'-'}</div>
         <button onclick="selectConfirmRow(${idx-1})" ${idx===0?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">◀</button>
-        <span style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;">${idx+1}/${queueRows.length}</span>
-        <button onclick="selectConfirmRow(${idx+1})" ${idx>=queueRows.length-1?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">▶</button>
+        <span style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;">${idx+1}/${confirmRows.length}</span>
+        <button onclick="selectConfirmRow(${idx+1})" ${idx>=confirmRows.length-1?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">▶</button>
       </div>
     </div>`;
 
@@ -2283,7 +2286,7 @@ function renderConfirmDetail(idx) {
 }
 
 function confirmCurrentRow() {
-  const r = queueRows[confirmIndex];
+  const r = confirmRows[confirmIndex];
   if (!r) return;
   confirmStatuses[r.vn] = 'confirmed';
   confirmedVns.add(r.vn);
@@ -2292,7 +2295,7 @@ function confirmCurrentRow() {
 }
 
 function unconfirmRow(idx) {
-  const r = queueRows[idx];
+  const r = confirmRows[idx];
   if (!r) return;
   confirmStatuses[r.vn] = 'pending';
   confirmedVns.delete(r.vn);
@@ -2301,7 +2304,7 @@ function unconfirmRow(idx) {
 }
 
 function confirmAllReady() {
-  queueRows.forEach(r => {
+  confirmRows.forEach(r => {
     if (confirmCompleteness(r).pct === 100) {
       confirmStatuses[r.vn] = 'confirmed';
       confirmedVns.add(r.vn);
