@@ -1176,7 +1176,8 @@ function applyQueueFilter() {
 }
 
 function updateClaimButtons() {
-  const isReady = document.getElementById('q-status')?.value === 'ready';
+  const isReady    = document.getElementById('q-status')?.value === 'ready';
+  const hasSelected = selectedVns.size > 0;
   const btnHD   = document.getElementById('btn-send-hd');
   const btnDMIS = document.getElementById('btn-send-dmis');
   if (btnHD) {
@@ -1187,10 +1188,12 @@ function updateClaimButtons() {
     btnHD.style.color      = isReady ? '#1a7a4a'  : '#8b99a9';
   }
   if (btnDMIS) {
-    btnDMIS.disabled = !isReady;
-    btnDMIS.style.opacity = isReady ? '1'          : '0.45';
-    btnDMIS.style.cursor  = isReady ? 'pointer'     : 'not-allowed';
-    btnDMIS.style.background = isReady ? ''         : '#d0d8e2';
+    // enable เฉพาะเมื่อ filter=ready และมีการติ๊กเลือก
+    const canSend = hasSelected;
+    btnDMIS.disabled = !canSend;
+    btnDMIS.style.opacity = canSend ? '1'       : '0.45';
+    btnDMIS.style.cursor  = canSend ? 'pointer'  : 'not-allowed';
+    btnDMIS.style.background = canSend ? ''      : '#d0d8e2';
   }
 }
 
@@ -1200,6 +1203,7 @@ function toggleSelectRow(vn, cb) {
   const newBg = cb.checked ? '#eef4fd' : confirmedVns.has(vn) ? '#f4fbf7' : '#fff';
   document.querySelectorAll(`.queue-cell[data-row-vn="${vn}"]`).forEach(el => { el.style.background = newBg; });
   updateSelectUI();
+  updateClaimButtons();
 }
 
 function toggleSelectAll(masterCb) {
@@ -1214,6 +1218,7 @@ function toggleSelectAll(masterCb) {
     document.querySelectorAll(`.queue-cell[data-row-vn="${vn}"]`).forEach(el => { el.style.background = newBg; });
   });
   updateSelectUI();
+  updateClaimButtons();
 }
 
 function updateSelectUI() {
@@ -1243,13 +1248,20 @@ async function openDmisLogin() {
   //   '?client_id=ucapps4&response_type=code&scope=openid' +
   //   '&redirect_uri=https%3A%2F%2Fucapps4.nhso.go.th%2Fdisease2ckd%2FossOpen';
 
-  // ส่งข้อมูล confirmed rows ไปยัง Extension ก่อน (ถ้าติดตั้งอยู่)
-  const toSubmit = queueRows.filter(r => confirmedVns.has(r.vn));
+  // ส่งเฉพาะเคสที่ติ๊กเลือก (selectedVns) เท่านั้น
+  const toSend = queueRows.filter(r => selectedVns.has(r.vn));
+
+  if (!toSend.length) {
+    alert('กรุณาติ๊กเลือกรายการที่ต้องการส่งเคลม DMIS ก่อน');
+    return;
+  }
+
+  // ส่งข้อมูลไปยัง Extension ด้วย (ถ้าติดตั้งอยู่)
   const extId = document.documentElement.getAttribute('data-dmis-ext-id');
-  if (extId && toSubmit.length && typeof chrome !== 'undefined' && chrome?.runtime?.sendMessage) {
+  if (extId && typeof chrome !== 'undefined' && chrome?.runtime?.sendMessage) {
     try {
       await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(extId, { action: 'fillDMIS', data: toSubmit }, res => {
+        chrome.runtime.sendMessage(extId, { action: 'fillDMIS', data: toSend }, res => {
           if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
           else resolve(res);
         });
@@ -1259,19 +1271,17 @@ async function openDmisLogin() {
     }
   }
 
-  // ส่ง confirmed rows ไปเก็บใน proxy queue → dmis_main.html จะ poll มารับ
-  const toSend = queueRows.filter(r => confirmedVns.has(r.vn));
-  if (toSend.length) {
-    try {
-      await fetch('http://localhost:8765/api/dmis-send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(toSend),
-      });
-    } catch(e) { console.warn('[dmis-send]', e.message); }
-  }
+  // ส่ง selected rows ไปยัง proxy queue → dmis_main.html รับผ่าน WebSocket/polling
+  try {
+    await fetch('http://localhost:8765/api/dmis-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toSend),
+    });
+    console.log(`[dmis-send] ส่ง ${toSend.length} เคส:`, toSend.map(r => r.vn));
+  } catch(e) { console.warn('[dmis-send]', e.message); }
 
-  // เปิดหน้า login ใน tab ใหม่ (ผ่าน proxy เพื่อหลีกเลี่ยง file:// restriction)
+  // เปิดหน้า login ใน tab ใหม่ (ผ่าน proxy)
   window.open('http://localhost:8765/login.html', '_blank');
 }
 
