@@ -344,6 +344,28 @@ a:hover{background:#005fa3;}</style></head><body>
     return;
   }
 
+  // ── /api/dashboard-stats  GET?from=&to=  aggregate stats via direct MySQL ────
+  if (req.url.startsWith('/api/dashboard-stats')) {
+    const qs   = new URL('http://x' + req.url).searchParams;
+    const from = qs.get('from') || new Date().toISOString().slice(0, 10);
+    const to   = qs.get('to')   || from;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    const p = getPool();
+    if (!p) { res.end(JSON.stringify({ ok: false, error: 'No DB connection — กรุณาตั้งค่าฐานข้อมูลก่อน' })); return; }
+    try {
+      const [[sRows], [rRows], [tRows]] = await Promise.all([
+        p.query(`SELECT COUNT(DISTINCT sv.vn) AS total,SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending,IFNULL(SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN IFNULL(c.hd_claim,0) ELSE 0 END),0) AS total_amount FROM clinic_hd_service sv LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn WHERE sv.service_date BETWEEN ${sqlEsc(from)} AND ${sqlEsc(to)}`),
+        p.query(`SELECT p.pttype AS code,p.name AS pttype_name,COUNT(DISTINCT sv.vn) AS total,SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending FROM clinic_hd_service sv LEFT JOIN visit_pttype vp ON vp.vn=sv.vn LEFT JOIN pttype p ON p.pttype=vp.pttype LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn WHERE sv.service_date BETWEEN ${sqlEsc(from)} AND ${sqlEsc(to)} GROUP BY p.pttype,p.name ORDER BY total DESC`),
+        p.query(`SELECT COUNT(DISTINCT sv.vn) AS total,SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,SUM(CASE WHEN c.clinic_hd_confirm_status='ready' AND IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS ready,SUM(CASE WHEN IFNULL(c.clinic_hd_confirm_status,'')!='ready' AND IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS unreviewed FROM clinic_hd_service sv LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn WHERE sv.service_date=CURDATE()`),
+      ]);
+      res.end(JSON.stringify({ ok: true, stats: sRows[0] || null, rights: rRows, today: tRows[0] || null }));
+    } catch(e) {
+      console.error('[dashboard-stats error]', e.message);
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // ── /api/registry/claim  POST from dmis_main.html — update claim_status ──────
   if (req.url === '/api/registry/claim') {
     if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }

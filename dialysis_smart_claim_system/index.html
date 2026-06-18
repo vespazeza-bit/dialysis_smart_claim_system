@@ -254,15 +254,8 @@
           <div style="font-size:13px;font-weight:700;color:#1c2e44;margin-bottom:12px;">ค้นหาข้อมูล</div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
             <div style="flex:0 0 auto;">
-              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:6px;letter-spacing:.3px;">วันที่รับบริการ</div>
-              <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
-                <button id="q-preset-today"   onclick="setQueuePreset('today')"   style="border:1px solid #2563a8;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#eef3fb;color:#2563a8;font-weight:600;">วันนี้</button>
-                <button id="q-preset-month"   onclick="setQueuePreset('month')"   style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">เดือนนี้</button>
-                <button id="q-preset-quarter" onclick="setQueuePreset('quarter')" style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ไตรมาสนี้</button>
-                <button id="q-preset-year"    onclick="setQueuePreset('year')"    style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ปีนี้</button>
-                <button id="q-preset-custom"  onclick="setQueuePreset('custom')"  style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">กำหนดเอง</button>
-              </div>
-              <div id="q-custom-range" style="display:none;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+              <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">วันที่รับบริการ</div>
+              <div style="display:flex;align-items:center;gap:6px;">
                 <div class="date-wrap" onclick="openDatePicker('q-date-from')">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   <span id="q-date-from-lbl" class="date-lbl">วว/ดด/ปปปป</span>
@@ -275,7 +268,6 @@
                   <input type="date" id="q-date-to" onchange="updateDateLabel('q-date-to')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
                 </div>
               </div>
-              <div id="q-range-label" style="font-size:12px;color:#8b99a9;margin-top:5px;"></div>
             </div>
             <div style="flex:0 0 160px;">
               <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">สถานะการตรวจสอบ</div>
@@ -369,24 +361,13 @@
       <!-- ============ LOGS ============ -->
       <div id="screen-logs" class="screen">
         <!-- filter bar -->
-        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:14px 20px;margin-bottom:14px;">
-          <!-- preset buttons -->
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-            <span style="font-size:13px;font-weight:600;color:#33465c;align-self:center;margin-right:4px;">ช่วงเวลา</span>
-            <button id="log-preset-month"   onclick="setLogPreset('month')"   style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#eef3fb;color:#2563a8;font-weight:600;">เดือนนี้</button>
-            <button id="log-preset-quarter" onclick="setLogPreset('quarter')" style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ไตรมาสนี้</button>
-            <button id="log-preset-year"    onclick="setLogPreset('year')"    style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ปีนี้</button>
-            <button id="log-preset-custom"  onclick="setLogPreset('custom')"  style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">กำหนดเอง</button>
-          </div>
-          <!-- date inputs (hidden when preset selected, shown when custom) -->
-          <div id="log-custom-range" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
-            <input type="date" id="log-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:5px 10px;font-size:13px;color:#1c2e44;">
-            <span style="color:#8b99a9;font-size:13px;">ถึง</span>
-            <input type="date" id="log-date-to"   style="border:1px solid #d0d9e4;border-radius:8px;padding:5px 10px;font-size:13px;color:#1c2e44;">
-            <button onclick="loadLogs()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:6px 18px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
-          </div>
-          <div id="log-range-label" style="font-size:12.5px;color:#8b99a9;margin-top:2px;"></div>
-          <span id="log-count" style="font-size:12.5px;color:#8b99a9;display:block;margin-top:4px;"></span>
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:600;color:#33465c;">ช่วงวันที่</span>
+          <input type="date" id="log-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+          <span style="color:#8b99a9;font-size:13px;">ถึง</span>
+          <input type="date" id="log-date-to"   style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+          <button onclick="loadLogs()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:7px 20px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
+          <span id="log-count" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
         </div>
         <!-- table -->
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
@@ -587,7 +568,7 @@ function navigate(screen) {
   if (screen === 'display')    renderDisplay();
   if (screen === 'dashboard')  setDashPreset(_dashPreset || 'month');
   if (screen === 'queue')      initQueueScreen();
-  if (screen === 'logs')       setLogPreset(_logPreset || 'month');
+  if (screen === 'logs')       loadLogs();
   // ถ้า screen อยู่ใต้ parent ที่มี submenu ให้ expand submenu นั้นอัตโนมัติ
   const pKey = getParentKey(screen);
   if (pKey) {
@@ -756,47 +737,13 @@ async function loadDashboard() {
   const now = new Date();
   document.getElementById('today-date').textContent = now.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric',era:'short'});
 
-  if (!APP.apiUrl) {
-    renderDashStat(null, from, to);
-    document.getElementById('activity-list').innerHTML = '<div style="padding:20px;text-align:center;color:#c9821a;font-size:13px;">กรุณาเชื่อมต่อฐานข้อมูลก่อน</div>';
-    document.getElementById('today-summary').innerHTML = '<div style="padding:16px;text-align:center;color:#c9821a;font-size:13px;">กรุณาเชื่อมต่อฐานข้อมูลก่อน</div>';
-    return;
-  }
-
   try {
-    const [statsRows, rightsRows, todayRows] = await Promise.all([
-      executeSqlViaApi(`
-        SELECT COUNT(DISTINCT sv.vn) AS total,
-          SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,
-          SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending,
-          IFNULL(SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN IFNULL(c.hd_claim,0) ELSE 0 END),0) AS total_amount
-        FROM clinic_hd_service sv
-        LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn
-        WHERE sv.service_date BETWEEN '${from}' AND '${to}'`),
-      executeSqlViaApi(`
-        SELECT p.pttype AS code, p.name AS pttype_name,
-          COUNT(DISTINCT sv.vn) AS total,
-          SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,
-          SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending
-        FROM clinic_hd_service sv
-        LEFT JOIN visit_pttype vp ON vp.vn=sv.vn
-        LEFT JOIN pttype p ON p.pttype=vp.pttype
-        LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn
-        WHERE sv.service_date BETWEEN '${from}' AND '${to}'
-        GROUP BY p.pttype, p.name
-        ORDER BY total DESC`),
-      executeSqlViaApi(`
-        SELECT COUNT(DISTINCT sv.vn) AS total,
-          SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent,
-          SUM(CASE WHEN c.clinic_hd_confirm_status='ready' AND IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS ready,
-          SUM(CASE WHEN IFNULL(c.clinic_hd_confirm_status,'')!='ready' AND IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS unreviewed
-        FROM clinic_hd_service sv
-        LEFT JOIN clinic_hd_claim c ON c.vn=sv.vn
-        WHERE sv.service_date=CURDATE()`)
-    ]);
-    renderDashStat(statsRows?.[0] || null, from, to);
-    renderDashRights(rightsRows || [], from, to);
-    renderDashToday(todayRows?.[0] || null);
+    const res  = await fetch(`http://localhost:8765/api/dashboard-stats?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'ไม่ทราบสาเหตุ');
+    renderDashStat(data.stats || null, from, to);
+    renderDashRights(data.rights || [], from, to);
+    renderDashToday(data.today || null);
   } catch(e) {
     document.getElementById('stat-cards').innerHTML = `<div style="grid-column:span 4;padding:20px;text-align:center;color:#cf3b3b;">โหลดข้อมูลไม่สำเร็จ: ${escHtml(e.message)}</div>`;
     document.getElementById('activity-list').innerHTML = `<div style="padding:20px;text-align:center;color:#cf3b3b;font-size:13px;">โหลดข้อมูลไม่สำเร็จ</div>`;
@@ -1281,33 +1228,23 @@ async function loadQueueDropdowns(from, to) {
 
 function initQueueScreen() {
   if (!queueRows.length) renderQueue(null);
+  const today = todayISO();
+  const f = document.getElementById('q-date-from');
+  const t = document.getElementById('q-date-to');
   if (_pendingQueueFilter) {
     const { pttype, from, to } = _pendingQueueFilter;
     _pendingQueueFilter = null;
-    _queuePreset = 'custom';
-    const fEl = document.getElementById('q-date-from');
-    const tEl = document.getElementById('q-date-to');
-    if (fEl) { fEl.value = from; updateDateLabel('q-date-from'); }
-    if (tEl) { tEl.value = to;   updateDateLabel('q-date-to'); }
-    ['today','month','quarter','year','custom'].forEach(k => {
-      const b = document.getElementById('q-preset-' + k);
-      if (!b) return;
-      const on = k === 'custom';
-      b.style.background  = on ? '#eef3fb' : '#fff';
-      b.style.color       = on ? '#2563a8' : '#33465c';
-      b.style.fontWeight  = on ? '600' : '400';
-      b.style.borderColor = on ? '#2563a8' : '#d0d9e4';
-    });
-    const cDiv = document.getElementById('q-custom-range');
-    if (cDiv) cDiv.style.display = 'flex';
-    updateQueueRangeLabel(from, to);
+    if (f) { f.value = from; updateDateLabel('q-date-from'); }
+    if (t) { t.value = to;   updateDateLabel('q-date-to'); }
     loadQueueDropdowns(from, to).then(() => {
       const pEl = document.getElementById('q-pttype');
       if (pEl && pttype) pEl.value = pttype;
       searchQueue();
     });
   } else {
-    setQueuePreset(_queuePreset || 'today');
+    if (f && !f.value) { f.value = today; updateDateLabel('q-date-from'); }
+    if (t && !t.value) { t.value = today; updateDateLabel('q-date-to'); }
+    loadQueueDropdowns(f ? f.value : today, t ? t.value : today);
   }
   updateClaimButtons();
 }
@@ -1317,7 +1254,6 @@ async function searchQueue() {
   const to     = document.getElementById('q-date-to')?.value   || todayISO();
   const pttype = document.getElementById('q-pttype')?.value    || '';
   const clinic   = document.getElementById('q-clinic')?.value  || '';
-  updateQueueRangeLabel(from, to);
 
   const grid = document.getElementById('queue-grid');
   const sum = document.getElementById('queue-summary');
@@ -1802,113 +1738,14 @@ function renderErrors() {
   `).join('');
 }
 
-let _queuePreset = 'today';
-
-function setQueuePreset(preset) {
-  _queuePreset = preset;
-  ['today','month','quarter','year','custom'].forEach(k => {
-    const b = document.getElementById('q-preset-' + k);
-    if (!b) return;
-    const on = k === preset;
-    b.style.background  = on ? '#eef3fb' : '#fff';
-    b.style.color       = on ? '#2563a8' : '#33465c';
-    b.style.fontWeight  = on ? '600' : '400';
-    b.style.borderColor = on ? '#2563a8' : '#d0d9e4';
-  });
-  const cDiv = document.getElementById('q-custom-range');
-  if (cDiv) cDiv.style.display = preset === 'custom' ? 'flex' : 'none';
-  if (preset !== 'custom') {
-    const { from, to } = getQueueDateRange();
-    const fEl = document.getElementById('q-date-from');
-    const tEl = document.getElementById('q-date-to');
-    if (fEl) { fEl.value = from; updateDateLabel('q-date-from'); }
-    if (tEl) { tEl.value = to;   updateDateLabel('q-date-to'); }
-    updateQueueRangeLabel(from, to);
-    searchQueue();
-  }
-}
-
-function getQueueDateRange() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  if (_queuePreset === 'today')   return { from: fmt(now), to: fmt(now) };
-  if (_queuePreset === 'month')   return { from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), to: fmt(now) };
-  if (_queuePreset === 'quarter') { const q = Math.floor(now.getMonth()/3); return { from: fmt(new Date(now.getFullYear(), q*3, 1)), to: fmt(now) }; }
-  if (_queuePreset === 'year')    return { from: fmt(new Date(now.getFullYear(), 0, 1)), to: fmt(now) };
-  const fEl = document.getElementById('q-date-from');
-  const tEl = document.getElementById('q-date-to');
-  return { from: fEl?.value || fmt(now), to: tEl?.value || fmt(now) };
-}
-
-function updateQueueRangeLabel(from, to) {
-  const el = document.getElementById('q-range-label');
-  if (!el) return;
-  const thMap = { today:'วันนี้', month:'เดือนนี้', quarter:'ไตรมาสนี้', year:'ปีนี้', custom:'กำหนดเอง' };
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const fmtTh = s => { const [y,m,d] = s.split('-'); return `${parseInt(d)} ${months[parseInt(m)-1]} ${parseInt(y)+543}`; };
-  el.textContent = from === to
-    ? `${thMap[_queuePreset]}: ${fmtTh(from)}`
-    : `${thMap[_queuePreset]}: ${fmtTh(from)} – ${fmtTh(to)}`;
-}
-
-let _logPreset = 'month';
-
-function setLogPreset(preset) {
-  _logPreset = preset;
-  const btns = ['month','quarter','year','custom'];
-  btns.forEach(k => {
-    const b = document.getElementById('log-preset-' + k);
-    if (!b) return;
-    const active = k === preset;
-    b.style.background = active ? '#eef3fb' : '#fff';
-    b.style.color       = active ? '#2563a8' : '#33465c';
-    b.style.fontWeight  = active ? '600' : '400';
-    b.style.borderColor = active ? '#2563a8' : '#d0d9e4';
-  });
-  const customDiv = document.getElementById('log-custom-range');
-  if (customDiv) customDiv.style.display = preset === 'custom' ? 'flex' : 'none';
-  if (preset !== 'custom') loadLogs();
-}
-
-function getLogDateRange() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  if (_logPreset === 'month') {
-    return { from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), to: fmt(now) };
-  }
-  if (_logPreset === 'quarter') {
-    const q = Math.floor(now.getMonth() / 3);
-    return { from: fmt(new Date(now.getFullYear(), q * 3, 1)), to: fmt(now) };
-  }
-  if (_logPreset === 'year') {
-    return { from: fmt(new Date(now.getFullYear(), 0, 1)), to: fmt(now) };
-  }
-  // custom
+async function loadLogs() {
+  const todayStr = new Date().toISOString().slice(0,10);
   const fromEl = document.getElementById('log-date-from');
   const toEl   = document.getElementById('log-date-to');
-  const todayStr = fmt(now);
   if (fromEl && !fromEl.value) fromEl.value = todayStr;
   if (toEl   && !toEl.value)   toEl.value   = todayStr;
-  return { from: fromEl?.value || todayStr, to: toEl?.value || todayStr };
-}
-
-function updateLogRangeLabel(from, to) {
-  const el = document.getElementById('log-range-label');
-  if (!el) return;
-  const thMap = { month:'เดือนนี้', quarter:'ไตรมาสนี้', year:'ปีนี้', custom:'กำหนดเอง' };
-  const fmtTh = s => {
-    const [y,m,d] = s.split('-');
-    const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-    return `${parseInt(d)} ${months[parseInt(m)-1]} ${parseInt(y)+543}`;
-  };
-  el.textContent = `${thMap[_logPreset]}: ${fmtTh(from)} – ${fmtTh(to)}`;
-}
-
-async function loadLogs() {
-  const { from, to } = getLogDateRange();
-  updateLogRangeLabel(from, to);
+  const from = fromEl?.value || todayStr;
+  const to   = toEl?.value   || todayStr;
 
   const el = document.getElementById('log-table');
   el.innerHTML = `<div style="padding:40px;text-align:center;color:#8b99a9;font-size:14px;">กำลังโหลดประวัติ...</div>`;
