@@ -1692,11 +1692,11 @@ async function loadLogs() {
     const sql = `
       SELECT
         c.vn,
-        IFNULL(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/%y %H:%i'),'—') AS sent_time,
+        IFNULL(CONCAT(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/'),YEAR(c.clinic_hd_claim_sent_at)+543,DATE_FORMAT(c.clinic_hd_claim_sent_at,' %H:%i')),'—') AS sent_time,
         IFNULL(c.clinic_hd_claim_sent_by,'ระบบ') AS sent_by,
         v.hn,
         v.vstdate,
-        DATE_FORMAT(v.vstdate,'%d/%m/%y') AS vstdate_fmt,
+        CONCAT(DATE_FORMAT(v.vstdate,'%d/%m/'),YEAR(v.vstdate)+543) AS vstdate_fmt,
         CONCAT(IFNULL(p.pname,''),IFNULL(p.fname,''),' ',IFNULL(p.lname,'')) AS ptname
       FROM clinic_hd_claim c
       INNER JOIN ovst v ON v.vn = c.vn
