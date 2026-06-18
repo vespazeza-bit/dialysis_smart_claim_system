@@ -1198,6 +1198,7 @@ function updateClaimButtons() {
 }
 
 function toggleSelectRow(vn, cb) {
+  if (claimStatusMap.has(vn)) { cb.checked = false; return; } // ส่งเคลมแล้ว — ห้ามเลือก
   if (cb.checked) selectedVns.add(vn);
   else selectedVns.delete(vn);
   const newBg = cb.checked ? '#eef4fd' : confirmedVns.has(vn) ? '#f4fbf7' : '#fff';
@@ -1211,6 +1212,7 @@ function toggleSelectAll(masterCb) {
   allCbs.forEach(cb => {
     const vn = cb.dataset.vn;
     if (!vn) return;
+    if (claimStatusMap.has(vn)) return; // ส่งเคลมแล้ว — ข้ามเสมอ
     cb.checked = masterCb.checked;
     if (masterCb.checked) selectedVns.add(vn);
     else selectedVns.delete(vn);
@@ -1515,13 +1517,18 @@ function renderQueue(rows) {
   rows.forEach((r, i) => {
     const isConfirmed = confirmedVns.has(r.vn);
     const isSelected  = selectedVns.has(r.vn);
+    const isSent      = claimStatusMap.has(r.vn);
     const st = stMap[isConfirmed ? 'confirmed' : 'review'];
-    const rowBg = isSelected ? '#eef4fd' : isConfirmed ? '#f4fbf7' : (i%2===1 ? '#fafbfc' : '#fff');
-    const cs = `background:${rowBg};padding:8px;border-bottom:1px solid #eef1f5;white-space:nowrap;font-size:16px;`;
+    const rowBg = isSent ? '#f1f5f9' : isSelected ? '#eef4fd' : isConfirmed ? '#f4fbf7' : (i%2===1 ? '#fafbfc' : '#fff');
+    const cs = `background:${rowBg};padding:8px;border-bottom:1px solid #eef1f5;white-space:nowrap;font-size:16px;${isSent?'opacity:0.72;':''}`;
     const vs = escHtml(r.vn);
 
     html += `<div style="display:contents;">`;
-    html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${vs}" ${isSelected?'checked':''} onchange="toggleSelectRow('${vs}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>`;
+    if (isSent) {
+      html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${vs}" disabled style="width:15px;height:15px;cursor:not-allowed;opacity:0.35;"></div>`;
+    } else {
+      html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${vs}" ${isSelected?'checked':''} onchange="toggleSelectRow('${vs}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>`;
+    }
     html += QUEUE_COLS.map(c=>`<div class="queue-cell" data-row-vn="${vs}" style="${cs}">${c[3](r)}</div>`).join('');
     html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}">
       <span style="background:${st.bg};color:${st.color};font-size:14px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span>
