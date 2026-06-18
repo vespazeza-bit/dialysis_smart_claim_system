@@ -426,6 +426,7 @@ const TODAY_SUMMARY = [
 ];
 // queue rows fetched from API
 let queueRows = [];
+let confirmRows = [];
 let selectedVns = new Set();
 const FIELD_GROUPS = [
   { title:'ข้อมูลผู้ป่วยและสิทธิ', hint:'จากทะเบียนผู้ป่วย', accent:'#3f9b6d', headBg:'#eef7f1', countLabel:'7 ฟิลด์',
@@ -861,57 +862,64 @@ async function enrichQueueData(rows) {
   FROM opdscreen WHERE vn IN (${vn}) GROUP BY vn`, 40);
   const heightMap = toMap(heightRows);
 
-  /* HD simple: blood_flow, dialyzer, dch_type_id — no joins, very short — chunk 40 */
+  /* HD simple: dialyzer, dch_type_id — chunk 40 */
   const HD_DCH = {'1':'Complete','2':'Unstable','3':'Hemofiltration','4':'Initial'};
   const hdSimpleRows = await chunked(vn => `SELECT sv.vn,
     MAX(sv.machine_flow) AS blood_flow_rate,
-    MAX(sv.machine_flow) AS blood_flow,
-    MAX(sv.clinic_hd_dialyzer_id) AS dialyzer,
+    MAX(dt.dialyzer_type_name) AS dialyzer,
     MAX(sv.clinic_hd_dch_type_id) AS dch_type_id
   FROM clinic_hd_service sv
+  LEFT JOIN clinic_hd_dialyzer di ON di.clinic_hd_dialyzer_id = sv.clinic_hd_dialyzer_id
+  LEFT JOIN dialyzer_type dt ON dt.dialyzer_type_id = di.dialyzer_type_id
   WHERE sv.vn IN (${vn})
   GROUP BY sv.vn`, 40);
 
-  /* HD lookup: membrane, vascular_access, reason — joins — chunk 25 */
+  /* HD lookup: membrane, vascular_access, reason — chunk 25 */
   const hdLookupRows = await chunked(vn => `SELECT sv.vn,
-    mt.membrane_type_name AS membrane,
+    (CASE WHEN mt.dmis_export='1' THEN mt.membrane_type_name
+          WHEN mt.dmis_export='2' THEN mt.membrane_type_name
+          WHEN mt.dmis_export='3' THEN mt.membrane_type_name ELSE NULL END) AS membrane,
     vss.clinic_hd_vss_type_name AS vascular_access,
     sdr.reason_name AS reason
   FROM clinic_hd_service sv
-  LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id=sv.clinic_hd_dialyzer_id
-  LEFT JOIN membrane_type mt ON mt.membrane_type_id=cd.membrane_type_id
-  LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id=sv.clinic_hd_vss_type_id
-  LEFT JOIN hd_short_dialysis_reason sdr ON sdr.hd_short_dialysis_reason_id=sv.hd_short_dialysis_reason_id
+  LEFT JOIN clinic_hd_dialyzer cd ON cd.clinic_hd_dialyzer_id = sv.clinic_hd_dialyzer_id
+  LEFT JOIN membrane_type mt ON mt.membrane_type_id = cd.membrane_type_id
+  LEFT JOIN clinic_hd_vss_type vss ON vss.clinic_hd_vss_type_id = sv.clinic_hd_vss_type_id
+  LEFT JOIN hd_short_dialysis_reason sdr ON sdr.id = sv.hd_short_dialysis_reason_id
   WHERE sv.vn IN (${vn})
   GROUP BY sv.vn`, 25);
 
-  /* Billing: total charges from opitemrece — chunk 40 (short query) */
-  const billRows = await chunked(vn => `SELECT vn,SUM(sum_price) AS hd_claim
-  FROM opitemrece WHERE vn IN (${vn}) GROUP BY vn`, 40);
+  /* Billing: blood_flow/hd_claim/parnutr/humanalb/lab_xray/iv_iron/lowmolheparin — chunk 30 */
+  const billRows = await chunked(vn => `SELECT o.vn,
+    SUM(CASE WHEN o.income='06' THEN o.sum_price END) AS blood_flow,
+    SUM(CASE WHEN n.billcode IN ('71640','71641') THEN o.sum_price END) AS hd_claim,
+    SUM(CASE WHEN n.billcode='55820' THEN o.sum_price END) AS parnutr,
+    SUM(CASE WHEN n.billcode='34116' THEN o.sum_price END) AS humanalb,
+    SUM(CASE WHEN o.income IN ('07','08') THEN o.sum_price END) AS lab_xray,
+    SUM(CASE WHEN d.sks_drug_code='755043' THEN o.sum_price END) AS iv_iron,
+    SUM(CASE WHEN d.sks_drug_code IN ('107134','107110') THEN o.sum_price END) AS lowmolheparin
+  FROM opitemrece o
+  LEFT JOIN nondrugitems n ON n.icode = o.icode
+  LEFT JOIN drugitems d ON d.icode = o.icode
+  WHERE o.vn IN (${vn})
+  GROUP BY o.vn`, 30);
 
-  /* Meds: get all HD meds as raw rows, classify by pattern in JS (avoids long LIKE URL) — chunk 30 */
-  const medRaw = await chunked(vn => `SELECT sv.vn,mt.dmis_name,ml.qty
+  /* Meds: GROUP_CONCAT esa_epo/qty/route per vn — chunk 25 */
+  const medAggRows = await chunked(vn => `SELECT sv.vn,
+    GROUP_CONCAT(DISTINCT mt.dmis_name SEPARATOR '\n') AS esa_epo,
+    GROUP_CONCAT(DISTINCT ml.qty SEPARATOR '\n') AS qty,
+    GROUP_CONCAT(DISTINCT r.clinic_hd_med_route_type_name SEPARATOR '\n') AS route
   FROM clinic_hd_service sv
-  INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id=sv.clinic_hd_service_id
-  INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id=ml.clinic_hd_med_type_id
-  WHERE sv.vn IN (${vn})`, 30);
+  INNER JOIN clinic_hd_service_med_list ml ON ml.clinic_hd_service_id = sv.clinic_hd_service_id
+  INNER JOIN clinic_hd_med_type mt ON mt.clinic_hd_med_type_id = ml.clinic_hd_med_type_id
+  LEFT JOIN clinic_hd_med_route_type r ON r.clinic_hd_med_route_type_id = ml.clinic_hd_med_route_type_id
+  WHERE sv.vn IN (${vn})
+  GROUP BY sv.vn`, 25);
 
-  /* Classify med rows in JS */
+  /* Build medMap from agg results */
   const medMap = {};
-  for (const row of medRaw) {
-    if (!medMap[row.vn]) medMap[row.vn] = {};
-    const m = medMap[row.vn];
-    const n = (row.dmis_name || '').toLowerCase();
-    if (!m.esa_epo && (n.includes('erythropoietin') || n.includes('epoetin') || n.includes('darbepoetin') || n.includes('mircera'))) {
-      m.esa_epo = row.dmis_name; m.qty = row.qty;
-    }
-    if (!m.iv_iron && (n.includes('iron') || n.includes('ferinject') || n.includes('venofer') || n.includes('cosmofer'))) {
-      m.iv_iron = row.qty;
-    }
-    if (!m.lowmolheparin && n.includes('heparin') && (n.includes('low') || n.includes('lmwh') || n.includes('enox') || n.includes('nadr'))) {
-      m.lowmolheparin = row.qty;
-    }
-    if (!m.humanalb && n.includes('albumin')) { m.humanalb = row.qty; }
+  for (const row of medAggRows) {
+    medMap[row.vn] = { esa_epo: row.esa_epo || null, qty: row.qty || null, route: row.route || null };
   }
 
   /* Merge hdSimple + hdLookup into one hdMap */
@@ -972,7 +980,7 @@ async function enrichQueueData(rows) {
       post_bun:         lab.post_bun        ?? null,
       hct:              lab.hct             ?? null,
       // --- enriched: HD clinical ---
-      blood_flow:       hd.blood_flow       ?? null,
+      blood_flow:       bill.blood_flow     ?? null,
       membrane:         hd.membrane         ?? null,
       dialyzer:         hd.dialyzer         ?? null,
       vascular_access:  hd.vascular_access  ?? null,
@@ -983,17 +991,17 @@ async function enrichQueueData(rows) {
       patient_type:     r.patient_type      ?? null,
       // --- enriched: billing ---
       hd_claim:         bill.hd_claim       ?? null,
-      lab_xray:         null,
+      lab_xray:         bill.lab_xray       ?? null,
       // --- enriched: meds ---
       esa_epo:          med.esa_epo         ?? null,
       qty:              med.qty             ?? null,
       route:            med.route           ?? null,
-      iv_iron:          med.iv_iron         ?? null,
-      lowmolheparin:    med.lowmolheparin   ?? null,
-      humanalb:         med.humanalb        ?? null,
+      iv_iron:          bill.iv_iron        ?? null,
+      lowmolheparin:    bill.lowmolheparin  ?? null,
+      humanalb:         bill.humanalb       ?? null,
       // --- static ---
       dbllumen:         '',
-      parnutr:          null,
+      parnutr:          bill.parnutr        ?? null,
     };
   });
 }
@@ -1312,7 +1320,7 @@ function renderQueue(rows) {
       <div style="${nr}">${fmtN(r.lab_xray)}</div>
       <div style="${nr}">${fmtN(r.humanalb)}</div>
       <div><span style="background:${st.bg};color:${st.color};font-size:11px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span></div>
-      <div style="text-align:right;"><button class="btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="navigate('detail')">ตรวจสอบ</button></div>
+      <div style="text-align:right;"><button class="btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="navigate('detail')">จัดการ</button></div>
     </div>`;
   }).join('');
 }
@@ -2100,8 +2108,10 @@ function confirmAvatar(name) {
 
 function openConfirmScreen() {
   if (!queueRows.length) { alert('กรุณาค้นหาข้อมูลก่อน'); return; }
+  if (!selectedVns.size) { alert('กรุณาเลือกรายการ'); return; }
+  confirmRows = queueRows.filter(r => selectedVns.has(r.vn));
   confirmStatuses = {};
-  queueRows.forEach(r => { confirmStatuses[r.vn] = 'pending'; });
+  confirmRows.forEach(r => { confirmStatuses[r.vn] = 'pending'; });
   confirmIndex = 0;
   const dtEl = document.getElementById('confirm-header-dt');
   if (dtEl) dtEl.textContent = confirmNowDT();
@@ -2117,9 +2127,9 @@ function closeConfirmScreen() {
 
 // Left panel: stats + case list
 function renderConfirmLeft() {
-  const total = queueRows.length;
-  const confirmed = queueRows.filter(r => confirmStatuses[r.vn] === 'confirmed').length;
-  const incomplete = queueRows.filter(r => confirmCompleteness(r).pct < 100).length;
+  const total = confirmRows.length;
+  const confirmed = confirmRows.filter(r => confirmStatuses[r.vn] === 'confirmed').length;
+  const incomplete = confirmRows.filter(r => confirmCompleteness(r).pct < 100).length;
   const waiting = total - confirmed;
 
   document.getElementById('confirm-total').textContent = total;
@@ -2143,7 +2153,7 @@ function renderConfirmLeft() {
 }
 
 function renderConfirmList() {
-  document.getElementById('confirm-list').innerHTML = queueRows.map((r, i) => {
+  document.getElementById('confirm-list').innerHTML = confirmRows.map((r, i) => {
     const { pct, missing } = confirmCompleteness(r);
     const isConfirmed = confirmStatuses[r.vn] === 'confirmed';
     const active = i === confirmIndex;
@@ -2170,7 +2180,7 @@ function renderConfirmList() {
 }
 
 function selectConfirmRow(idx, noScroll) {
-  if (idx < 0 || idx >= queueRows.length) return;
+  if (idx < 0 || idx >= confirmRows.length) return;
   confirmIndex = idx;
   renderConfirmList();
   renderConfirmDetail(idx);
@@ -2181,8 +2191,8 @@ function selectConfirmRow(idx, noScroll) {
 }
 
 function renderConfirmDetail(idx) {
-  if (!queueRows[idx]) return;
-  const r = queueRows[idx];
+  if (!confirmRows[idx]) return;
+  const r = confirmRows[idx];
   const { pct, missing } = confirmCompleteness(r);
   const isConfirmed = confirmStatuses[r.vn] === 'confirmed';
 
@@ -2199,8 +2209,8 @@ function renderConfirmDetail(idx) {
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="background:#f0871f;border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:700;color:#fff;">${r.pttype||'-'}</div>
         <button onclick="selectConfirmRow(${idx-1})" ${idx===0?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">◀</button>
-        <span style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;">${idx+1}/${queueRows.length}</span>
-        <button onclick="selectConfirmRow(${idx+1})" ${idx>=queueRows.length-1?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">▶</button>
+        <span style="font-size:12px;color:#7a9bbf;font-family:'IBM Plex Mono',monospace;">${idx+1}/${confirmRows.length}</span>
+        <button onclick="selectConfirmRow(${idx+1})" ${idx>=confirmRows.length-1?'disabled style="opacity:.3;"':''} style="background:rgba(255,255,255,.12);color:#cde;border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;">▶</button>
       </div>
     </div>`;
 
@@ -2276,7 +2286,7 @@ function renderConfirmDetail(idx) {
 }
 
 function confirmCurrentRow() {
-  const r = queueRows[confirmIndex];
+  const r = confirmRows[confirmIndex];
   if (!r) return;
   confirmStatuses[r.vn] = 'confirmed';
   confirmedVns.add(r.vn);
@@ -2285,7 +2295,7 @@ function confirmCurrentRow() {
 }
 
 function unconfirmRow(idx) {
-  const r = queueRows[idx];
+  const r = confirmRows[idx];
   if (!r) return;
   confirmStatuses[r.vn] = 'pending';
   confirmedVns.delete(r.vn);
@@ -2294,7 +2304,7 @@ function unconfirmRow(idx) {
 }
 
 function confirmAllReady() {
-  queueRows.forEach(r => {
+  confirmRows.forEach(r => {
     if (confirmCompleteness(r).pct === 100) {
       confirmStatuses[r.vn] = 'confirmed';
       confirmedVns.add(r.vn);
