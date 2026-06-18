@@ -1022,9 +1022,12 @@ async function loadConfirmStatusesFromDB(vns) {
   const list = vns.map(v => `'${String(v).replace(/'/g,"''")}'`).join(',');
   try {
     const rows = await executeSqlViaApi(
-      `SELECT vn,clinic_hd_confirm_status FROM clinic_hd_claim WHERE vn IN (${list}) AND clinic_hd_confirm_status='ready'`
+      `SELECT vn, clinic_hd_confirm_status, claim_status FROM clinic_hd_claim WHERE vn IN (${list})`
     );
-    (rows || []).forEach(r => confirmedVns.add(r.vn));
+    (rows || []).forEach(r => {
+      if (r.clinic_hd_confirm_status === 'ready') confirmedVns.add(r.vn);
+      if (r.claim_status === 'sent') claimStatusMap.set(r.vn, 'sent');
+    });
   } catch(e) { console.warn('[loadConfirmStatuses]', e.message); }
 }
 
@@ -1140,7 +1143,8 @@ async function searchQueue() {
     const sql  = buildQueueSQL(from, to, pttype, clinic);
     const rows = await executeSqlViaApi(sql);
     queueRows  = await enrichQueueData(rows || []);
-    confirmedVns = new Set();
+    confirmedVns   = new Set();
+    claimStatusMap = new Map();
     await loadConfirmStatusesFromDB(queueRows.map(r => r.vn));
     selectedVns.clear();
 
@@ -1253,6 +1257,18 @@ async function openDmisLogin() {
     } catch(e) {
       console.warn('[DMIS] Extension error:', e.message);
     }
+  }
+
+  // ส่ง confirmed rows ไปเก็บใน proxy queue → dmis_main.html จะ poll มารับ
+  const toSend = queueRows.filter(r => confirmedVns.has(r.vn));
+  if (toSend.length) {
+    try {
+      await fetch('http://localhost:8765/api/dmis-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSend),
+      });
+    } catch(e) { console.warn('[dmis-send]', e.message); }
   }
 
   // เปิดหน้า login ใน tab ใหม่ (ผ่าน proxy เพื่อหลีกเลี่ยง file:// restriction)
@@ -1494,7 +1510,11 @@ function renderQueue(rows) {
     html += `<div style="display:contents;">`;
     html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${vs}" ${isSelected?'checked':''} onchange="toggleSelectRow('${vs}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>`;
     html += QUEUE_COLS.map(c=>`<div class="queue-cell" data-row-vn="${vs}" style="${cs}">${c[3](r)}</div>`).join('');
-    html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}"><span style="background:${st.bg};color:${st.color};font-size:14px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span></div>`;
+    const claimSent = claimStatusMap.has(r.vn);
+    html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}">
+      <span style="background:${st.bg};color:${st.color};font-size:14px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;white-space:nowrap;">${st.label}</span>
+      ${claimSent ? `<br><span style="background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;border-radius:5px;padding:2px 7px;display:inline-block;margin-top:3px;white-space:nowrap;">📤 ส่งเคลมแล้ว</span>` : ''}
+    </div>`;
     html += `</div>`;
   });
 
@@ -2030,6 +2050,23 @@ function initApp() {
   setFontSize(currentFontSize);
 }
 
+// ฟัง localStorage event จาก dmis_main.html เมื่อส่งเคลมเสร็จ → อัปเดต badge ใน queue
+window.addEventListener('storage', (ev) => {
+  if (ev.key !== 'dmis_claim_update' || !ev.newValue) return;
+  try {
+    const data = JSON.parse(ev.newValue);
+    if (data.vn && data.claim_status === 'sent') {
+      claimStatusMap.set(data.vn, 'sent');
+      renderQueue(queueRows.filter(r => {
+        const stFilter = document.getElementById('q-status-filter')?.value || 'all';
+        if (stFilter === 'ready')  return confirmedVns.has(r.vn);
+        if (stFilter === 'review') return !confirmedVns.has(r.vn);
+        return true;
+      }));
+    }
+  } catch(_) {}
+});
+
 // ===== BOOT =====
 window.addEventListener('DOMContentLoaded', async () => {
   updateTime();
@@ -2181,7 +2218,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ===== CONFIRM SCREEN STATE =====
 let confirmIndex = 0;
 let confirmStatuses = {};
-let confirmedVns = new Set();
+let confirmedVns   = new Set();
+let claimStatusMap = new Map(); // vn → 'sent' | null
 
 const CONFIRM_GROUPS = [
   { title:'ข้อมูลผู้ป่วย', hint:'จากทะเบียนผู้ป่วย', accent:'#3f9b6d', headBg:'#eef7f1',

@@ -7,6 +7,12 @@ const mysql = require('mysql2/promise');
 
 const PORT = 8765;
 
+// In-memory queue: index.html pushes records here; dmis_main.html polls and consumes
+const dmisQueue = [];
+
+// SQL string escape helper
+function sqlEsc(v) { return (v == null || v === '') ? 'NULL' : `'${String(v).replace(/\\/g,'\\\\').replace(/'/g,"''")}'`; }
+
 // Load MySQL config from db-config.json (reload on each write so changes take effect without restart)
 function loadDbConfig() {
   try {
@@ -236,6 +242,68 @@ a:hover{background:#005fa3;}</style></head><body>
     } catch(e) {
       console.error('[sql-proxy error]', e.message);
       if (!res.headersSent) { res.writeHead(502); res.end(JSON.stringify({ error: e.message })); }
+    }
+    return;
+  }
+
+  // ── /api/health  health check ────────────────────────────────────────────────
+  if (req.url === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, ts: Date.now() }));
+    return;
+  }
+
+  // ── /api/dmis-send  POST from index.html — queue records for dmis_main.html ──
+  if (req.url === '/api/dmis-send') {
+    if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+    const body = await readBody(req);
+    let records = [];
+    try { records = JSON.parse(body); } catch {}
+    if (!Array.isArray(records)) records = [records];
+    const valid = records.filter(r => r && r.vn);
+    dmisQueue.push(...valid);
+    console.log(`[dmis-send] queued ${valid.length} records (queue=${dmisQueue.length})`);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, queued: valid.length, total: dmisQueue.length }));
+    return;
+  }
+
+  // ── /api/dmis-poll  GET from dmis_main.html — consume queued records ──────────
+  if (req.url === '/api/dmis-poll') {
+    const items = dmisQueue.splice(0, dmisQueue.length);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, records: items }));
+    return;
+  }
+
+  // ── /api/registry/claim  POST from dmis_main.html — update claim_status ──────
+  if (req.url === '/api/registry/claim') {
+    if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+    try {
+      const body = await readBody(req);
+      let data = {};
+      try { data = JSON.parse(body); } catch {}
+      const { vn, claim_by } = data;
+      if (!vn) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'Missing vn' }));
+        return;
+      }
+      const p = getPool();
+      if (p) {
+        await p.query(
+          `UPDATE clinic_hd_claim SET claim_status='sent', clinic_hd_claim_sent='Y', ` +
+          `clinic_hd_claim_sent_by=${sqlEsc(claim_by)}, clinic_hd_claim_sent_at=NOW() ` +
+          `WHERE vn=${sqlEsc(vn)}`
+        );
+      }
+      console.log(`[registry/claim] vn=${vn} → sent`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, vn }));
+    } catch(e) {
+      console.error('[registry/claim]', e.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
     }
     return;
   }
