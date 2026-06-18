@@ -647,7 +647,8 @@ function openFormMenu(e) {
   document.getElementById('menu-record').classList.add('active');
   doOpenForm();
 
-  // ลงทะเบียนเป็น worker เมื่อ user คลิกเมนูนี้
+  // ลงทะเบียนเป็น worker เมื่อ user คลิกเมนูนี้ (ไม่ใช่ตอน WS เปิด)
+  // server จะ flush playwrightQueue → Playwright เริ่มทำงานหลังจากนี้
   if (!window.__workerRegistered) {
     window.__workerRegistered = true;
     const _ws = window.__activeWS;
@@ -657,6 +658,7 @@ function openFormMenu(e) {
     }
   }
 
+  // เริ่ม startAutoFill เมื่อกดเมนูนี้ (จะรอรับ JSON จาก WS หรือใช้ queue ที่อาจสะสมไว้)
   if (typeof startAutoFill === 'function' && !window.__fillRunning) {
     setTimeout(() => startAutoFill().catch(() => {}), 500);
   }
@@ -755,22 +757,14 @@ function pushWsCaseToFill(data) {
   }
 }
 
-// ส่ง filled ack — อัปเดต claim_status ผ่าน WebSocket (primary) + fetch (fallback)
+// ส่ง filled ack กลับ server หลัง save success → server forward เป็น response กลับ sender
 function sendFilledAck(id, vn, status = 'OK', message) {
-  if (!vn) return;
-  const claim_by = sessionStorage.getItem('dmis_user') || 'admin';
-  // ส่งผ่าน WebSocket ก่อน (real-time)
+  if (id == null && !vn) return;  // ต้องมีอย่างน้อย vn
   const ws = window.__activeWS;
-  if (ws && ws.readyState === 1) {
-    try { ws.send(JSON.stringify({ action: 'filled', data: { id, vn, status, message, claim_by } })); } catch(_) {}
-  }
-  // Fallback: อัปเดต MySQL โดยตรงผ่าน HTTP (รับประกันบันทึก แม้ WS หลุด)
-  fetch('/api/registry/claim', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, vn, status, message, claim_by }),
-  }).catch(() => {});
-  console.log('[claim] vn=' + vn + ' status=' + status);
+  if (!ws || ws.readyState !== 1) return;
+  const payload = { action: 'filled', data: { id, vn, status, message } };
+  ws.send(JSON.stringify(payload));
+  console.log('[WS DMIS] ส่ง filled ack vn=' + vn + ' status=' + status);
 }
 
 // Modal popup — แจ้งว่าบันทึกเสร็จและส่งสถานะกลับ client แล้ว
@@ -877,39 +871,58 @@ function showWsReceivePopup(records) {
   m.onclick = e => { if (e.target === m) close(); };
 }
 
-// WebSocket connection monitor (primary) + HTTP polling fallback
+// เปิด WebSocket ไปที่ registry แล้ว auto-reconnect
 function startConnectionMonitor() {
   const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
   function connect() {
     let ws;
-    try { ws = new WebSocket(wsUrl); } catch (e) { setTimeout(connect, 3000); return; }
+    try { ws = new WebSocket(wsUrl); }
+    catch (e) { setTimeout(connect, 3000); return; }
     connState.ws = ws;
+
     ws.onopen = () => {
       connState.online = true;
       connState.retries = 0;
       hideDisconnectPopup();
+      // ไม่ register เป็น worker ทันที — รอให้ user คลิกเมนู "บันทึกข้อมูลฟอกไต" ก่อน
+      // (worker จะ register เมื่อ openFormMenu() ถูกเรียก)
       window.__activeWS = ws;
       if (connDialogResolve) { connDialogResolve(); connDialogResolve = null; }
-      console.log('[ws] เชื่อมต่อสำเร็จ');
     };
     ws.onmessage = (ev) => {
       let msg;
-      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      try { msg = JSON.parse(ev.data); } catch (e) { console.warn('[WS DMIS] parse error:', e); return; }
+      console.log('[WS DMIS] ⬇ message:', msg);
+
+      // 🏁 registry แจ้งว่าเคสสุดท้ายแล้ว → เด้ง popup เสร็จสิ้น (ครั้งเดียว)
       if (msg.action === 'done') {
-        const total = msg.data?.total || 0, success = msg.data?.success || 0;
-        addInlineLog('🏁 รับ done จาก registry — บันทึกครบทุกเคสแล้ว', 'ok');
-        try { showClaimDonePopup(success, total); } catch(e) {}
+        const total   = msg.data?.total   || 0;
+        const success = msg.data?.success || 0;
+        addInlineLog(`🏁 รับ done จาก registry — บันทึกครบทุกเคสแล้ว`, 'ok');
+        try { showClaimDonePopup(success, total); } catch (e) { console.error('[done popup]', e); }
         return;
       }
-      if (msg.action !== 'new' || !msg.data) return;
-      console.log('[ws] รับ new case vn=' + msg.data.vn);
+
+      if (msg.action !== 'new' || !msg.data) {
+        console.log('[WS DMIS] skip — action=' + msg.action);
+        return;
+      }
+      console.log('[WS DMIS] ✓ new case id=' + msg.data.id + ' vn=' + msg.data.vn);
+
+      // 1) รับข้อมูล (ไม่แสดง popup)
+      try {
+        console.log('[WS DMIS] ✓ รับ JSON vn=' + (msg.data && msg.data.vn));
+      } catch (e) {
+        console.error('[WS DMIS] error:', e);
+      }
+
+      // 2) push เข้า fill queue (loop จะกรอกฟอร์มเอง)
       pushWsCaseToFill(msg.data);
     };
     ws.onclose = () => {
       connState.online = false;
       connState.retries++;
-      window.__activeWS = null;
-      window.__workerRegistered = false;
+      // แสดง popup เฉพาะถ้ากำลังคีย์อยู่
       if (loadProgress()) {
         showDisconnectPopup();
         updateDisconnectStatus(`กำลังพยายามเชื่อมต่อใหม่... (ครั้งที่ ${connState.retries})`);
@@ -920,24 +933,11 @@ function startConnectionMonitor() {
     ws.onerror = () => { try { ws.close(); } catch(_) {} };
   }
   connect();
-
-  // Polling fallback — รับ records ที่ส่งผ่าน /api/dmis-send เมื่อ WS ยังไม่พร้อม
-  setInterval(async () => {
-    try {
-      const res = await fetch('/api/dmis-poll');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.records && data.records.length > 0) {
-        console.log('[poll] รับ', data.records.length, 'records');
-        data.records.forEach(r => pushWsCaseToFill(r));
-      }
-    } catch (_) {}
-  }, 2000);
 }
 // เริ่ม monitor ทันทีที่ page load
 startConnectionMonitor();
 
-// รอจน WebSocket online (ใช้ใน fill loop)
+// รอจน online (ใช้ใน loop)
 async function waitForOnline() {
   if (connState.online) return;
   showDisconnectPopup();
@@ -989,13 +989,31 @@ async function startAutoFill() {
     }
   } catch (_) {}
 
-  // 2) ถ้าไม่มีข้อมูลจาก queue — รอรับจาก index.html ผ่าน polling (ไม่ดึง /api/start-fill)
+  // 2) ถ้าไม่มีข้อมูลจาก WebSocket queue:
+  //    - verify mode ON: รอ WS message มาให้ — ไม่ดึง bulk จาก /api/start-fill
+  //    - verify mode OFF: fallback ดึง bulk จาก /api/start-fill (REST → registry MySQL, ไม่ใช่ Excel)
   if (!patients.length) {
-    addInlineLog('⏳ รอรับข้อมูลจากระบบทะเบียน (http://localhost:3000)...', 'info');
-    addInlineLog('💡 ไปที่หน้าระบบทะเบียน → ติ๊กยืนยันพร้อมส่ง → กด "ส่งเคลม DMIS"', 'info');
-    document.getElementById('pw-status-txt').textContent = '⏳ รอรับข้อมูลจากระบบทะเบียน...';
-    window.__fillRunning = false;
-    return;
+    if (isVerifyMode()) {
+      addInlineLog('🔍 โหมดตรวจสอบ — รอรับข้อมูลทีละเคสผ่าน json', 'info');
+      document.getElementById('pw-status-txt').textContent = '🔍 รอรับข้อมูลจาก json...';
+      window.__fillRunning = false;
+      return;
+    }
+    const filterParams = getUrlParams();
+    addInlineLog('⏳ กำลังรับข้อมูลจาก json', 'info');
+    try {
+      const res = await fetch(API_BASE + '/api/start-fill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filterParams),
+      });
+      const d = await res.json();
+      if (!d.success) { addInlineLog('❌ ' + (d.message || 'เกิดข้อผิดพลาด'), 'err'); return; }
+      patients = d.patients || [];
+    } catch(e) {
+      addInlineLog('❌ ไม่สามารถเชื่อมต่อ server ได้: ' + e.message, 'err');
+      return;
+    }
   }
 
   if (!patients.length) { addInlineLog('⚠️ ไม่พบข้อมูลที่ตรงเงื่อนไข', 'info'); return; }
@@ -1265,18 +1283,31 @@ async function fillPatientsInIframe(patients, startIdx = 0, initSuccess = 0, ini
 
       if (typeof fw2.calcTotal === 'function') fw2.calcTotal();
 
+      // Playwright (headless) จัดการ submit + ส่ง OK แล้ว
+      // visible browser กรอกฟอร์มเพื่อแสดงข้อมูลเท่านั้น — ไม่รอกดบันทึก
       await delay(300);
       success++;
-      addInlineLog(`   ✅ กรอกฟอร์มเสร็จ — บันทึกสถานะส่งเคลมแล้ว`, 'ok');
+      addInlineLog(`   ✅ กรอกฟอร์มเสร็จ — Playwright ส่ง OK แล้ว`, 'ok');
 
-      // อัปเดต claim_status='sent' ใน clinic_hd_claim ผ่าน proxy
-      sendFilledAck(r.id, r.vn, 'OK');
-      // แจ้ง tab อื่น (index.html) ผ่าน localStorage event
-      localStorage.setItem('dmis_claim_update', JSON.stringify({
-        vn: r.vn, claim_status: 'sent',
-        claim_by: sessionStorage.getItem('dmis_user') || 'admin',
-        claim_at: new Date().toISOString(),
-      }));
+      // บันทึกสถานะ claim=Y ลงฐานข้อมูล + แจ้ง registry tab
+      // หมายเหตุ: ต้องใช้ path ตรง /api/registry/claim (ไม่ผ่าน /dmis proxy)
+      // เพราะ endpoint นี้อยู่ใน server_registry.js ไม่ใช่ server.js
+      const REGISTRY_BASE = location.origin; // เช่น http://localhost:3001
+      try {
+        const claimBy = sessionStorage.getItem('dmis_user') || 'admin';
+        await fetch(REGISTRY_BASE + '/api/registry/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...r, claim_by: claimBy }),
+        });
+        // แจ้ง registry_main (tab อื่น) ผ่าน localStorage event
+        localStorage.setItem('dmis_claim_update', JSON.stringify({
+          vn: r.vn,
+          claim: 'Y',
+          claim_by: claimBy,
+          claim_at: new Date().toISOString(),
+        }));
+      } catch(_) {}
 
     } catch(err) {
       failed++;
