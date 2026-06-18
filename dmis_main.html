@@ -647,7 +647,16 @@ function openFormMenu(e) {
   document.getElementById('menu-record').classList.add('active');
   doOpenForm();
 
-  // เริ่ม startAutoFill เมื่อกดเมนูนี้ (ใช้ queue ที่ poll มาสะสมไว้)
+  // ลงทะเบียนเป็น worker เมื่อ user คลิกเมนูนี้
+  if (!window.__workerRegistered) {
+    window.__workerRegistered = true;
+    const _ws = window.__activeWS;
+    if (_ws && _ws.readyState === 1) {
+      try { _ws.send(JSON.stringify({ action: 'register', data: { role: 'worker' } })); } catch (_) {}
+      addInlineLog('🔗 ลงทะเบียน worker — รอ Playwright กรอกฟอร์ม...', 'ok');
+    }
+  }
+
   if (typeof startAutoFill === 'function' && !window.__fillRunning) {
     setTimeout(() => startAutoFill().catch(() => {}), 500);
   }
@@ -746,10 +755,16 @@ function pushWsCaseToFill(data) {
   }
 }
 
-// ส่ง filled ack กลับ server — อัปเดต claim_status ใน MySQL ผ่าน proxy
+// ส่ง filled ack — อัปเดต claim_status ผ่าน WebSocket (primary) + fetch (fallback)
 function sendFilledAck(id, vn, status = 'OK', message) {
   if (!vn) return;
   const claim_by = sessionStorage.getItem('dmis_user') || 'admin';
+  // ส่งผ่าน WebSocket ก่อน (real-time)
+  const ws = window.__activeWS;
+  if (ws && ws.readyState === 1) {
+    try { ws.send(JSON.stringify({ action: 'filled', data: { id, vn, status, message, claim_by } })); } catch(_) {}
+  }
+  // Fallback: อัปเดต MySQL โดยตรงผ่าน HTTP (รับประกันบันทึก แม้ WS หลุด)
   fetch('/api/registry/claim', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -862,12 +877,51 @@ function showWsReceivePopup(records) {
   m.onclick = e => { if (e.target === m) close(); };
 }
 
-// Polling-based connection monitor (แทน WebSocket)
+// WebSocket connection monitor (primary) + HTTP polling fallback
 function startConnectionMonitor() {
-  connState.online = true;
-  window.__activeWS = null;
+  const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  function connect() {
+    let ws;
+    try { ws = new WebSocket(wsUrl); } catch (e) { setTimeout(connect, 3000); return; }
+    connState.ws = ws;
+    ws.onopen = () => {
+      connState.online = true;
+      connState.retries = 0;
+      hideDisconnectPopup();
+      window.__activeWS = ws;
+      if (connDialogResolve) { connDialogResolve(); connDialogResolve = null; }
+      console.log('[ws] เชื่อมต่อสำเร็จ');
+    };
+    ws.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      if (msg.action === 'done') {
+        const total = msg.data?.total || 0, success = msg.data?.success || 0;
+        addInlineLog('🏁 รับ done จาก registry — บันทึกครบทุกเคสแล้ว', 'ok');
+        try { showClaimDonePopup(success, total); } catch(e) {}
+        return;
+      }
+      if (msg.action !== 'new' || !msg.data) return;
+      console.log('[ws] รับ new case vn=' + msg.data.vn);
+      pushWsCaseToFill(msg.data);
+    };
+    ws.onclose = () => {
+      connState.online = false;
+      connState.retries++;
+      window.__activeWS = null;
+      window.__workerRegistered = false;
+      if (loadProgress()) {
+        showDisconnectPopup();
+        updateDisconnectStatus(`กำลังพยายามเชื่อมต่อใหม่... (ครั้งที่ ${connState.retries})`);
+      }
+      const delay = Math.min(2000 + connState.retries * 1000, 10000);
+      setTimeout(connect, delay);
+    };
+    ws.onerror = () => { try { ws.close(); } catch(_) {} };
+  }
+  connect();
 
-  // Poll /api/dmis-poll ทุก 2 วินาที เพื่อรับ records จาก index.html
+  // Polling fallback — รับ records ที่ส่งผ่าน /api/dmis-send เมื่อ WS ยังไม่พร้อม
   setInterval(async () => {
     try {
       const res = await fetch('/api/dmis-poll');
@@ -883,8 +937,12 @@ function startConnectionMonitor() {
 // เริ่ม monitor ทันทีที่ page load
 startConnectionMonitor();
 
-// รอจน online — polling ไม่มี disconnect state; return ทันทีเสมอ
-async function waitForOnline() { return; }
+// รอจน WebSocket online (ใช้ใน fill loop)
+async function waitForOnline() {
+  if (connState.online) return;
+  showDisconnectPopup();
+  await new Promise(resolve => { connDialogResolve = resolve; });
+}
 function isVerifyMode() { return localStorage.getItem(VERIFY_KEY) === 'true'; }
 
 // ---- เริ่ม Auto-Fill: ดึงข้อมูลจาก server แล้วเปิด Playwright กรอกข้อมูล ----

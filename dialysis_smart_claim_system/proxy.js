@@ -1,14 +1,64 @@
-const http  = require('http');
-const https = require('https');
-const url   = require('url');
-const fs    = require('fs');
-const path  = require('path');
-const mysql = require('mysql2/promise');
+const http   = require('http');
+const https  = require('https');
+const url    = require('url');
+const fs     = require('fs');
+const path   = require('path');
+const mysql  = require('mysql2/promise');
+const crypto = require('crypto');
 
 const PORT = 8765;
 
 // In-memory queue: index.html pushes records here; dmis_main.html polls and consumes
 const dmisQueue = [];
+
+// ── WebSocket worker registry ─────────────────────────────────────────────────
+const wsWorkers = new Set();
+
+function makeWsFrame(text) {
+  const payload = Buffer.from(text, 'utf8');
+  const len = payload.length;
+  let header;
+  if (len < 126) {
+    header = Buffer.from([0x81, len]);
+  } else if (len < 65536) {
+    header = Buffer.alloc(4);
+    header[0] = 0x81; header[1] = 126;
+    header.writeUInt16BE(len, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = 0x81; header[1] = 127;
+    header.writeBigUInt64BE(BigInt(len), 2);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+function parseWsFrames(buf) {
+  const frames = []; let offset = 0;
+  while (offset + 2 <= buf.length) {
+    const b0 = buf[offset], b1 = buf[offset + 1];
+    const masked = (b1 & 0x80) !== 0;
+    let plen = b1 & 0x7f, hend = offset + 2;
+    if (plen === 126) { if (hend + 2 > buf.length) break; plen = buf.readUInt16BE(hend); hend += 2; }
+    else if (plen === 127) { if (hend + 8 > buf.length) break; plen = Number(buf.readBigUInt64BE(hend)); hend += 8; }
+    const mend = masked ? hend + 4 : hend;
+    if (mend + plen > buf.length) break;
+    let data;
+    if (masked) {
+      const mask = buf.slice(hend, hend + 4); data = Buffer.alloc(plen);
+      for (let i = 0; i < plen; i++) data[i] = buf[mend + i] ^ mask[i % 4];
+    } else { data = buf.slice(mend, mend + plen); }
+    frames.push({ opcode: b0 & 0x0f, text: data.toString('utf8') });
+    offset = mend + plen;
+  }
+  return frames;
+}
+
+function wsSend(socket, msg) {
+  try { socket.write(makeWsFrame(JSON.stringify(msg))); } catch(_) {}
+}
+function broadcastToWorkers(msg) {
+  wsWorkers.forEach(s => wsSend(s, msg));
+}
 
 // SQL string escape helper
 function sqlEsc(v) { return (v == null || v === '') ? 'NULL' : `'${String(v).replace(/\\/g,'\\\\').replace(/'/g,"''")}'`; }
@@ -273,8 +323,14 @@ a:hover{background:#005fa3;}</style></head><body>
     try { records = JSON.parse(body); } catch {}
     if (!Array.isArray(records)) records = [records];
     const valid = records.filter(r => r && r.vn);
-    dmisQueue.push(...valid);
-    console.log(`[dmis-send] queued ${valid.length} records (queue=${dmisQueue.length})`);
+    // Push to WS workers directly; only queue what has no connected worker
+    if (wsWorkers.size > 0) {
+      valid.forEach(r => broadcastToWorkers({ action: 'new', data: r }));
+      console.log(`[dmis-send] broadcast ${valid.length} records to ${wsWorkers.size} WS worker(s)`);
+    } else {
+      dmisQueue.push(...valid);
+      console.log(`[dmis-send] no WS workers — queued ${valid.length} records (queue=${dmisQueue.length})`);
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, queued: valid.length, total: dmisQueue.length }));
     return;
@@ -320,7 +376,83 @@ a:hover{background:#005fa3;}</style></head><body>
     return;
   }
 
+  // ── /api/start-fill  REST fallback — returns empty list (WS is the primary path) ──
+  if (req.url === '/api/start-fill') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, patients: [], message: 'ใช้ WebSocket เป็นช่องทางหลัก' }));
+    return;
+  }
+
   res.writeHead(404); res.end('Not found');
 });
 
 server.listen(PORT, () => console.log(`[proxy] listening on http://localhost:${PORT}`));
+
+// ── WebSocket upgrade handler (ws://localhost:8765/ws) ───────────────────────
+server.on('upgrade', (req, socket) => {
+  if (req.url !== '/ws') {
+    socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  const key = req.headers['sec-websocket-key'];
+  if (!key) { socket.destroy(); return; }
+  const accept = crypto.createHash('sha1')
+    .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+  socket.write([
+    'HTTP/1.1 101 Switching Protocols',
+    'Upgrade: websocket',
+    'Connection: Upgrade',
+    `Sec-WebSocket-Accept: ${accept}`,
+    '', '',
+  ].join('\r\n'));
+
+  wsWorkers.add(socket);
+  console.log(`[ws] worker connected (total=${wsWorkers.size})`);
+
+  // Flush pending queue items to this new worker immediately
+  if (dmisQueue.length > 0) {
+    const pending = dmisQueue.splice(0, dmisQueue.length);
+    pending.forEach(r => wsSend(socket, { action: 'new', data: r }));
+    console.log(`[ws] flushed ${pending.length} queued records to new worker`);
+  }
+
+  let buf = Buffer.alloc(0);
+  socket.on('data', async (chunk) => {
+    buf = Buffer.concat([buf, chunk]);
+    const frames = parseWsFrames(buf);
+    buf = Buffer.alloc(0); // reset (simple; sufficient for typical frame sizes)
+    for (const { opcode, text } of frames) {
+      if (opcode === 0x8) { try { socket.destroy(); } catch(_) {} return; }
+      if (opcode === 0x9) { socket.write(Buffer.from([0x8a, 0])); continue; } // pong
+      if (opcode !== 0x1 && opcode !== 0x0) continue;
+      let msg;
+      try { msg = JSON.parse(text); } catch(_) { continue; }
+      console.log('[ws] ⬇', msg.action, (msg.data && msg.data.vn) || '');
+
+      if (msg.action === 'register') {
+        console.log('[ws] worker registered role=' + (msg.data && msg.data.role));
+        continue;
+      }
+      if (msg.action === 'filled') {
+        const { vn, claim_by, status } = msg.data || {};
+        if (vn) {
+          const p = getPool();
+          if (p) {
+            try {
+              await p.query(
+                `UPDATE clinic_hd_claim SET claim_status='sent', clinic_hd_claim_sent='Y', ` +
+                `clinic_hd_claim_sent_by=${sqlEsc(claim_by||'')}, clinic_hd_claim_sent_at=NOW() ` +
+                `WHERE vn=${sqlEsc(vn)}`
+              );
+              console.log(`[ws] claim updated vn=${vn}`);
+            } catch(e) { console.error('[ws] claim update', e.message); }
+          }
+        }
+        continue;
+      }
+    }
+  });
+  socket.on('close', () => { wsWorkers.delete(socket); console.log(`[ws] worker disconnected (total=${wsWorkers.size})`); });
+  socket.on('error', () => { wsWorkers.delete(socket); });
+});
