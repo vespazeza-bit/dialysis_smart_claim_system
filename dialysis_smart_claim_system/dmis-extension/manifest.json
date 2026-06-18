@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "DMIS Auto Fill",
+  "version": "1.0.0",
+  "description": "Auto-fill dialysis patient data into NHSO DMIS from HD Registry",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://ucapps4.nhso.go.th/*",
+    "https://lovely-trains-drop.loca.lt/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://lovely-trains-drop.loca.lt/*",
+      "http://localhost:*/*",
+      "https://localhost:*/*",
+      "http://127.0.0.1:*/*",
+      "https://127.0.0.1:*/*"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:*/*",
+        "https://localhost:*/*",
+        "http://127.0.0.1:*/*",
+        "https://127.0.0.1:*/*",
+        "https://lovely-trains-drop.loca.lt/*"
+      ],
+      "js": ["inject-id.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DMIS Auto Fill"
+  }
+}

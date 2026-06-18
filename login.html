@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>e-Authentication (SSO) - NHSO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif;
+    min-height: 100vh;
+    background: #e8f0fb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 16px 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 45%;
+    background: linear-gradient(180deg, transparent 0%, #c5d9f5 60%, #a8c7f0 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -60px; left: -80px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(100,160,240,0.25) 0%, transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .logo-box {
+    width: 110px; height: 70px;
+    background: #fff;
+    border: 2px solid #0073c7;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0073c7;
+    box-shadow: 0 2px 8px rgba(0,115,199,0.15);
+    padding: 6px;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .logo-icon { font-size: 24px; margin-bottom: 2px; }
+  .logo-th   { font-size: 18px; font-weight: 800; color: #0073c7; }
+  .logo-sub  { font-size: 9px; color: #555; font-weight: 400; }
+
+  .tagline {
+    color: #0073c7;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 14px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,80,180,0.13);
+    padding: 36px 36px 28px;
+    width: 100%;
+  }
+
+  .card-title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+  }
+  .version-badge {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .version-badge span {
+    display: inline-block;
+    background: #1a6db5;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-family: monospace;
+  }
+
+  .mode-badge {
+    text-align: center;
+    margin-bottom: 18px;
+    background: #1a6db5;
+    color: #fff;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .field-group { margin-bottom: 14px; }
+
+  .field-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 46px 0 14px;
+    border: 1.5px solid #cdd5e0;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #333;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field-input::placeholder { color: #aab0bc; }
+  .field-input:focus {
+    border-color: #0073c7;
+    box-shadow: 0 0 0 3px rgba(0,115,199,0.12);
+  }
+  .field-input.error { border-color: #e03434; }
+
+  .input-wrap { position: relative; }
+  .eye-btn {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    cursor: pointer; font-size: 18px;
+    color: #8898aa; padding: 4px;
+    line-height: 1;
+  }
+  .eye-btn:hover { color: #0073c7; }
+
+  .forgot-row {
+    text-align: right;
+    margin-bottom: 18px;
+    margin-top: 4px;
+  }
+  .forgot-link {
+    color: #0073c7;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    background: none; border: none;
+    font-family: inherit; padding: 0;
+  }
+  .forgot-link:hover { text-decoration: underline; }
+
+  .alert {
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .alert-error   { background: #fff0f0; border: 1px solid #fbb; color: #c0392b; }
+  .alert-success { background: #f0fff6; border: 1px solid #a0dbb5; color: #1a7a45; }
+
+  .btn-login {
+    width: 100%;
+    height: 48px;
+    background: #0073c7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-login:hover:not(:disabled) { background: #005fa3; }
+  .btn-login:active { transform: scale(0.99); }
+  .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0 16px;
+    color: #9aa0ac; font-size: 13px;
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: #e0e6ee;
+  }
+
+  .alt-btns { display: flex; gap: 12px; margin-bottom: 14px; }
+  .btn-alt {
+    flex: 1; height: 44px;
+    border: 1.5px solid #d0d8e8;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #333;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .btn-alt:hover { border-color: #0073c7; box-shadow: 0 0 0 2px rgba(0,115,199,0.1); }
+  .alt-icon {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .icon-sc { background: linear-gradient(135deg,#ff6b9d,#c44dff); }
+  .icon-td { background: #003087; color: #fff; font-size: 11px; font-weight: 800; }
+
+  .other-login {
+    text-align: center;
+    font-size: 13px;
+    color: #0073c7;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 20px;
+  }
+  .other-login:hover { text-decoration: underline; }
+
+  .bottom-links {
+    border-top: 1px solid #edf0f5;
+    padding-top: 18px;
+    text-align: center;
+  }
+  .register-row {
+    font-size: 13.5px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .register-row a { color: #0073c7; text-decoration: none; font-weight: 600; }
+  .portal-link {
+    display: block;
+    font-size: 12.5px;
+    color: #0073c7;
+    text-decoration: none;
+    line-height: 1.9;
+  }
+  .portal-link:hover { text-decoration: underline; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  .spinner-blue {
+    border-color: rgba(0,115,199,0.3);
+    border-top-color: #0073c7;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  .auth-loading {
+    text-align: center;
+    padding: 24px 0;
+    color: #0073c7;
+    font-size: 15px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <div class="logo-icon">➕</div>
+      <div class="logo-th">สปสช.</div>
+      <div class="logo-sub">สำนักงานหลักประกันสุขภาพแห่งชาติ</div>
+    </div>
+  </div>
+  <div class="tagline">บัญชีเดียวกันทุกบริการงานทะเบียนหน่วยบริการ (One Stop Service)</div>
+
+  <!-- Card -->
+  <div class="card">
+    <div class="card-title">e-Authentication (SSO)</div>
+    <div class="version-badge"><span>v DMIS.01</span></div>
+
+    <!-- Mode badge (shown when mode=dmis or hd) -->
+    <div id="mode-badge" class="mode-badge hidden"></div>
+
+    <!-- Error alert -->
+    <div id="alert-box" class="alert alert-error hidden"></div>
+
+    <!-- Login form -->
+    <form id="login-form" onsubmit="handleLogin(event)" autocomplete="off">
+      <div class="field-group">
+        <input id="username" class="field-input" type="text"
+          placeholder="ชื่อผู้ใช้งาน" autofocus autocomplete="off" />
+      </div>
+      <div class="field-group">
+        <div class="input-wrap">
+          <input id="password" class="field-input" type="password"
+            placeholder="รหัสผ่าน" autocomplete="off" />
+          <button type="button" class="eye-btn" onclick="togglePass()">👁️</button>
+        </div>
+      </div>
+      <div class="forgot-row">
+        <button type="button" class="forgot-link">ลืมรหัสผ่าน?</button>
+      </div>
+      <button id="btn-submit" class="btn-login" type="submit">เข้าสู่ระบบ</button>
+      <div class="or-divider">หรือดำเนินการต่อด้วย</div>
+      <div class="alt-btns">
+        <button type="button" class="btn-alt">
+          <div class="alt-icon icon-sc">💳</div>Smart Card
+        </button>
+        <button type="button" class="btn-alt">
+          <div class="alt-icon icon-td">Thai</div>ThaiD
+        </button>
+      </div>
+      <a class="other-login" href="#">วิธีการลงชื่อเข้าใช้รูปแบบอื่น</a>
+      <div class="bottom-links">
+        <div class="register-row">ยังไม่มีบัญชีผู้ใช้งาน SSO? <a href="#">สมัครสมาชิก</a></div>
+        <a class="portal-link" href="#">ลิงค์ไปยังระบบรวมศูนย์กลางบริการระบบงานขึ้นทะเบียน (e-Portal)</a>
+        <a class="portal-link" href="#">ลิงค์ไปยังระบบรวมศูนย์กลางบริการระบบงานลงทะเบียน (SRM-Portal)</a>
+      </div>
+    </form>
+
+    <!-- Auth loading -->
+    <div id="auth-loading" class="auth-loading hidden">
+      <div style="margin-bottom:12px;">
+        <span class="spinner spinner-blue"></span>
+      </div>
+      กำลังตรวจสอบสิทธิ์...
+    </div>
+  </div>
+
+</div>
+
+<script>
+// API base: ถ้าเปิดจาก port 3002 ให้ใช้ /dmis prefix
+const API_BASE = (location.port === '3002') ? '/dmis' : '';
+const params   = new URLSearchParams(location.search);
+const urlMode  = params.get('mode') || '';
+const isDmis   = urlMode === 'dmis';
+const isHd     = urlMode === 'hd';
+
+// แสดง mode badge
+if (isDmis || isHd) {
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = (isDmis ? '📤 กำลังเข้าสู่ระบบสำหรับ: ส่งเคลม DMIS'
+                               : '💉 กำลังเข้าสู่ระบบสำหรับ: ส่งเคลม HD');
+  badge.classList.remove('hidden');
+}
+
+function togglePass() {
+  const p = document.getElementById('password');
+  const btn = document.querySelector('.eye-btn');
+  if (p.type === 'password') { p.type = 'text'; btn.textContent = '🙈'; }
+  else                        { p.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function showError(msg) {
+  const box = document.getElementById('alert-box');
+  box.textContent = '⚠️ ' + msg;
+  box.classList.remove('hidden');
+  document.getElementById('username').classList.add('error');
+  document.getElementById('password').classList.add('error');
+}
+function clearError() {
+  document.getElementById('alert-box').classList.add('hidden');
+  document.getElementById('username').classList.remove('error');
+  document.getElementById('password').classList.remove('error');
+}
+
+function setLoading(on) {
+  document.getElementById('login-form').classList.toggle('hidden', on);
+  document.getElementById('auth-loading').classList.toggle('hidden', !on);
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  clearError();
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!username || !password) {
+    showError('กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await fetch(API_BASE + '/api/login', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ username, password, mode: urlMode }),
+    });
+
+    let data;
+    try { data = await res.json(); }
+    catch {
+      setLoading(false);
+      showError('DMIS server ยังไม่พร้อม (HTTP ' + res.status + ') — รอสักครู่แล้วลองใหม่ หรือรัน start_server.bat');
+      return;
+    }
+
+    if (!res.ok || !data.success) {
+      setLoading(false);
+      showError(data.message || 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
+      return;
+    }
+
+    sessionStorage.setItem('dmis_user', data.username || username);
+    sessionStorage.setItem('dmis_login_mode', data.mode || urlMode || '');
+    sessionStorage.removeItem('dmis_python_ran');
+
+    const redirectPath = data.redirect || '/dmis_main';
+    // absolute URL (http/https) → navigate directly; relative → prepend API_BASE
+    if (/^https?:\/\//i.test(redirectPath)) {
+      window.location.href = redirectPath;
+    } else {
+      window.location.href = API_BASE + redirectPath + location.search;
+    }
+
+  } catch (err) {
+    setLoading(false);
+    showError('ไม่สามารถเชื่อมต่อ server ได้ — ตรวจสอบ tray icon มุมขวาล่าง หรือรัน start_server.bat');
+  }
+}
+</script>
+</body>
+</html>

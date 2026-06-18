@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Disease Management Information System - NHSO</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+  font-size: 12px;
+  background: #fff;
+  color: #000;
+  min-height: 100vh;
+}
+
+/* ---- Top Header ---- */
+.top-header {
+  background: linear-gradient(to right, #2a6fbf, #4a90e2);
+  color: #fff;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.top-header h1 { font-size: 16px; margin: 0; font-weight: bold; }
+.top-header .subtitle { font-size: 11px; }
+.system-title {
+  font-size: 16px;
+  font-weight: bold;
+  font-style: italic;
+  color: #fff;
+  text-align: right;
+}
+.web-code {
+  background: #f5a623;
+  color: #000;
+  font-weight: 700;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* ---- User bar ---- */
+.user-bar {
+  background: #e8e8e8;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-bottom: 1px solid #999;
+}
+.user-bar .red { color: #c00; font-weight: bold; }
+
+/* ---- Top Nav ---- */
+.top-nav {
+  background: #4a78b8;
+  color: #fff;
+  display: flex;
+  border-bottom: 1px solid #2a5298;
+}
+.top-nav a {
+  color: #fff;
+  text-decoration: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  border-right: 1px solid #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.top-nav a:hover { background: #2a5a98; }
+.top-nav a.active { background: #f5a623; color: #000; }
+.top-nav .logout { margin-left: auto; border-right: none; }
+
+/* ---- Body layout ---- */
+.body-wrap {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+#main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  min-width: 0;
+}
+#panel-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---- Left sidebar ---- */
+.sidebar {
+  width: 220px;
+  background: #f5f5f5;
+  border-right: 1px solid #ccc;
+  flex-shrink: 0;
+  overflow-y: auto;
+  font-size: 11px;
+}
+.sidebar-section { border-bottom: 1px solid #ccc; }
+.sidebar-head {
+  background: #c00;
+  color: #fff;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.sidebar-head.active { background: #c00; }
+.sidebar-menu a {
+  display: block;
+  padding: 3px 4px 3px 14px;
+  color: #c00;
+  text-decoration: none;
+  border-bottom: 1px dotted #ccc;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.4;
+  background: url('data:image/gif;base64,R0lGODlhBgAGAIABAMwAAP///yH5BAEAAAEALAAAAAAGAAYAAAIIjI+JwO2dAFEAOw==') no-repeat 4px center;
+}
+.sidebar-menu a:hover { background-color: #ffe; }
+.sidebar-menu a.active { background-color: #ffe; font-weight: bold; }
+.sidebar-divider {
+  padding: 2px 6px;
+  color: #888;
+  font-size: 11px;
+}
+.sidebar-link-plain {
+  display: block;
+  padding: 3px 4px 3px 14px;
+  color: #c00;
+  text-decoration: none;
+  border-bottom: 1px dotted #ccc;
+  cursor: pointer;
+  font-size: 11px;
+  background: url('data:image/gif;base64,R0lGODlhBgAGAIABAMwAAP///yH5BAEAAAEALAAAAAAGAAYAAAIIjI+JwO2dAFEAOw==') no-repeat 4px center;
+}
+.sidebar-link-plain:hover { background-color: #ffe; }
+
+/* ---- Main content ---- */
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Announcement table ---- */
+.announce-card {
+  background: #fff;
+  border: 1px solid #b8c8e8;
+  border-radius: 3px;
+}
+.announce-head {
+  background: #2a5298;
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.announce-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.announce-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid #edf0f8;
+  font-size: 13px;
+  vertical-align: top;
+}
+.announce-table td:first-child {
+  white-space: nowrap;
+  color: #555;
+  width: 140px;
+  font-size: 12px;
+}
+.announce-table a { color: #1a3a7a; text-decoration: none; }
+.announce-table a:hover { text-decoration: underline; }
+.announce-table tr:hover td { background: #f4f7ff; }
+
+/* ---- Modal overlay ---- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  width: 420px;
+  overflow: hidden;
+}
+.modal-head {
+  background: #2a5298;
+  color: #fff;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-body {
+  padding: 24px 24px 20px;
+}
+.countdown-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 16px;
+}
+.countdown-ring {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 14px;
+}
+.countdown-ring svg {
+  transform: rotate(-90deg);
+}
+.countdown-ring .num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: #2a5298;
+}
+.countdown-label {
+  font-size: 14px;
+  color: #444;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.countdown-sub {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}
+
+/* progress */
+.prog-bar-bg {
+  height: 10px;
+  background: #dde8f5;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.prog-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2a5298, #4db8ff);
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+.prog-pct {
+  font-size: 12px;
+  color: #555;
+  text-align: right;
+  margin-bottom: 10px;
+}
+.log-box {
+  max-height: 160px;
+  overflow-y: auto;
+  background: #f5f8fd;
+  border: 1px solid #d0dcf0;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: 'Consolas', monospace;
+  margin-top: 8px;
+}
+.log-box .ok   { color: #1a7a45; }
+.log-box .err  { color: #c0392b; }
+.log-box .info { color: #1a3a7a; }
+.log-line { line-height: 1.7; }
+
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(42,82,152,0.3);
+  border-top-color: #2a5298;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-close {
+  width: 100%;
+  height: 40px;
+  background: #2a5298;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 14px;
+}
+.btn-close:hover { background: #1a3a7a; }
+.btn-close.green { background: #1a7a45; }
+.btn-close.green:hover { background: #135c34; }
+
+/* alert */
+.alert-info {
+  background: #eef4ff;
+  border: 1px solid #b8cef0;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #1a3a7a;
+  margin-bottom: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP HEADER ===== -->
+<div class="top-header">
+  <div>
+    <h1>สำนักงานหลักประกันสุขภาพแห่งชาติ</h1>
+    <div class="subtitle">http://www.nhso.go.th</div>
+    <div class="subtitle">NATIONAL HEALTH SECURITY OFFICE</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="system-title">Disease Management Information System</div>
+    <span class="web-code">WEB0023</span>
+  </div>
+</div>
+
+<!-- ===== USER BAR ===== -->
+<div class="user-bar">
+  ผู้ใช้งาน : <span class="red" id="display-user">วรัญญา อนุตรโต</span>
+  &nbsp;&nbsp;
+  หน่วยบริการ/โรงพยาบาล : <span class="red">โรงพยาบาลบางกอกเมดิคอลซอฟต์แวร์จำกัด</span>
+</div>
+
+<!-- ===== TOP NAV ===== -->
+<div class="top-nav" id="top-nav">
+  <a href="#">การรักษา/ติดตามผล</a>
+  <a href="#">ประวัติการรักษา</a>
+  <a href="#">รายงาน</a>
+  <a href="#" class="active" id="nav-pr" onclick="showWelcome(event)">ประชาสัมพันธ์</a>
+  <a href="#" id="nav-hd" onclick="toggleSidebar(event)">Hemodialysis (UC/อปท.)</a>
+  <a href="#" class="logout" onclick="doLogout(event)">ออกจากระบบ</a>
+</div>
+
+<!-- ===== BODY ===== -->
+<div class="body-wrap">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-head active" onclick="toggleMenu(this)">Hemodialysis (UC/อปท.)</div>
+      <div class="sidebar-menu" id="hd-menu">
+        <a href="#" id="menu-record" onclick="openFormMenu(event)">บันทึกข้อมูลฟอกไต (UC/อปท./กทม./ขสมก./รฟท./ครูเอกชน)</a>
+        <a href="#">บันทึกข้อมูลส่งต่อผู้ป่วย (UC/อปท./กทม./ขสมก./รฟท./ครูเอกชน)</a>
+        <a href="#">บันทึกข้อมูลอุทธรณ์ชดเชยค่าฟอกไต (UC/อปท./กทม./ขสมก./รฟท.)</a>
+      </div>
+    </div>
+    <div class="sidebar-divider">----------------------</div>
+    <a class="sidebar-link-plain" href="#">Pre-Audit HD - UC/CK350</a>
+    <a class="sidebar-link-plain" href="#">อุทธรณ์ HD UC</a>
+    <a class="sidebar-link-plain" href="#">อุทธรณ์ HD CK349</a>
+    <div class="sidebar-divider">----------------------</div>
+    <a class="sidebar-link-plain" href="#">บันทึกข้อมูลฟอกไต ประกันสังคม เบิกส่วนต่างจาก อปท./กทม./ขสมก./รฟท./ครูเอกชน</a>
+    <div class="sidebar-divider">----------------------</div>
+    <a class="sidebar-link-plain" href="#">ประวัติการฟอกเลือดด้วยเครื่องไตเทียม</a>
+    <a class="sidebar-link-plain" href="#">ลงทะเบียนผู้ป่วย Hemodialysis สิทธิ UC (หน่วยบริการ)</a>
+    <a class="sidebar-link-plain" href="#">รายงานฟอกไต (UC/อปท./กทม./ขสมก./รฟท./ครูเอกชน)</a>
+    <a class="sidebar-link-plain" href="#">รายงานการบันทึกข้อมูล Erythropoitin (UC)</a>
+    <a class="sidebar-link-plain" href="#">รายงานการส่งต่อผู้ป่วย (UC/อปท./กทม./ขสมก./รฟท./ครูเอกชน)</a>
+    <div class="sidebar-divider">----------------------</div>
+    <a class="sidebar-link-plain" href="#">รายงานตรวจสอบการประมวลผลชดเชย ตามวันที่ให้บริการฟอกเลือดด้วยเครื่องไตเทียม (สำหรับหน่วยบริการ)</a>
+    <a class="sidebar-link-plain" href="#">รายงานผลการชดเชยค่าบริการฟอกเลือดด้วยเครื่องไตเทียม (สำหรับหน่วยบริการ)</a>
+    <div class="sidebar-divider">----------------------</div>
+    <a class="sidebar-link-plain" href="#">รายงานการจ่ายชดเชยยา Erythropoitin (EUR) (UC)</a>
+    <a class="sidebar-link-plain" href="#">รายงานอุทธรณ์ชดเชยค่าบริการฟอกไต (อปท. - สำหรับหน่วยบริการ)</a>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="main-content">
+
+    <!-- หน้า home: ยินดีต้อนรับ (default) -->
+    <div id="panel-announce">
+      <div class="announce-card" style="text-align:center;padding:60px 40px">
+        <div style="font-size:64px;margin-bottom:18px">🏥</div>
+        <div style="font-size:22px;font-weight:700;color:#1a3a7a;line-height:1.5;margin-bottom:10px">
+          ยินดีต้อนรับเข้าสู่ระบบเบิกเคลม
+        </div>
+        <div style="font-size:18px;font-weight:600;color:#2a5298;line-height:1.4;margin-bottom:20px">
+          Disease Management Information System (DMIS)
+        </div>
+        <div style="font-size:14px;color:#666;line-height:1.7">
+          กรุณาเลือกเมนู <strong style="color:#1a3a7a">Hemodialysis (UC/อปท.)</strong> ด้านบนหรือด้านซ้ายเพื่อเริ่มต้นใช้งาน
+        </div>
+      </div>
+    </div>
+
+    <!-- หน้าเตรียมเข้าบันทึกข้อมูล HD -->
+    <div id="panel-hemo-prep" style="display:none">
+      <div class="announce-card" style="text-align:center;padding:60px 40px">
+        <div style="font-size:64px;margin-bottom:18px">🩺</div>
+        <div style="font-size:22px;font-weight:700;color:#1a3a7a;line-height:1.5;margin-bottom:10px">
+          เตรียมเข้าบันทึกข้อมูลเพื่อส่งเบิกเคลมฟอกเลือด
+        </div>
+        <div style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px">
+          กรุณาเลือกรายการที่ต้องการบันทึกจากเมนูด้านซ้าย
+        </div>
+        <div style="font-size:13px;color:#888">
+          ➜ คลิก <strong style="color:#1a3a7a">บันทึกข้อมูลฟอกไต (UC/อปท./กทม./ขสมก./รฟท.)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- หน้าบันทึกข้อมูลฟอกไต (Playwright auto-fill) -->
+    <div id="panel-form" style="display:none; height:100%;">
+
+      <!-- breadcrumb -->
+      <div style="background:#e8edf8;border:1px solid #c0cce8;padding:6px 12px;font-size:15px;margin-bottom:6px;border-radius:3px;">
+        🏠 หน้าหลัก &rsaquo; Hemodialysis (UC/อปท.) &rsaquo;
+        <strong>บันทึกข้อมูลฟอกไต (UC/อปท./กทม./ขสมก./รฟท.)</strong>
+      </div>
+
+      <!-- progress bar แถบบาง -->
+      <div id="pw-bar-wrap" style="display:none;background:#fff;border:1px solid #c0cce8;border-radius:3px;padding:8px 14px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-size:15px;font-weight:700;color:#2a5298;">
+            <span class="spinner"></span> <span id="pw-status-txt">กำลังกรอกข้อมูลอัตโนมัติ...</span>
+          </span>
+          <span style="font-size:14px;color:#555;" id="pw-pct-txt">0%</span>
+        </div>
+        <div class="prog-bar-bg">
+          <div class="prog-bar-fill" id="pw-fill" style="width:0%"></div>
+        </div>
+        <div id="pw-log-inline" style="margin-top:6px;max-height:80px;overflow-y:auto;font-size:13px;font-family:Consolas,monospace;color:#333;background:#f5f8fd;border:1px solid #d0dcf0;border-radius:3px;padding:4px 8px;"></div>
+      </div>
+
+      <!-- done banner -->
+      <div id="pw-done-bar" style="display:none;background:#e6f9ee;border:1px solid #7dcca0;border-radius:3px;padding:10px 16px;margin-bottom:6px;font-size:16px;font-weight:700;color:#1a7a45;">
+        🎉 กรอกข้อมูลครบทุก record เรียบร้อยแล้ว!
+        <button onclick="backToAnnounce()" style="margin-left:16px;padding:4px 14px;background:#1a7a45;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">← กลับหน้าหลัก</button>
+      </div>
+
+      <!-- iframe แสดงฟอร์มกรอกข้อมูล hemodialysis -->
+      <iframe id="form-iframe" src="/hemodialysis_form.html"
+        style="flex:1;border:1px solid #b8c8e8;border-radius:3px;background:#fff;min-height:500px;width:100%;"
+        frameborder="0"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== CONFIRM POPUP: ยืนยันส่งเคลม HD ===== -->
+<div class="modal-overlay" id="confirm-hd-modal">
+  <div class="modal-box" style="width:460px">
+    <div class="modal-head" style="background:#1a6db5; padding:14px 20px; font-size:17px">
+      <span>💉</span>
+      <span>ยืนยันการส่งเคลม HD</span>
+    </div>
+    <div class="modal-body" style="padding:28px 28px 24px">
+      <div style="text-align:center; margin-bottom:22px">
+        <div style="font-size:48px; margin-bottom:12px">🏥</div>
+        <div style="font-size:17px; font-weight:700; color:#1a3a7a; line-height:1.6">
+          ต้องการบันทึกข้อมูลเพื่อส่งเคลม<br>ฟอกไตในระบบ HD 2.6
+        </div>
+        <div style="font-size:14px; color:#888; margin-top:8px">ใช่หรือไม่?</div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center">
+        <button id="confirm-hd-yes"
+          style="flex:1; max-width:160px; height:48px; background:#1a6db5; color:#fff;
+                 border:none; border-radius:8px; font-size:16px; font-weight:700;
+                 font-family:inherit; cursor:pointer; display:flex; align-items:center;
+                 justify-content:center; gap:8px; transition:background 0.2s"
+          onmouseover="this.style.background='#145a9e'"
+          onmouseout="this.style.background='#1a6db5'"
+          onclick="onConfirmHdYes()">
+          ✅ ใช่
+        </button>
+        <button id="confirm-hd-no"
+          style="flex:1; max-width:160px; height:48px; background:#fff; color:#555;
+                 border:1.5px solid #ccc; border-radius:8px; font-size:16px; font-weight:700;
+                 font-family:inherit; cursor:pointer; display:flex; align-items:center;
+                 justify-content:center; gap:8px; transition:background 0.2s, border-color 0.2s"
+          onmouseover="this.style.background='#f5f5f5'; this.style.borderColor='#999'"
+          onmouseout="this.style.background='#fff'; this.style.borderColor='#ccc'"
+          onclick="onConfirmHdNo()">
+          ❌ ไม่
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: countdown + progress ===== -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>⚙️</span>
+      <span id="modal-title">กำลังเปิดฟอร์มบันทึกข้อมูลฟอกไต</span>
+    </div>
+    <div class="modal-body">
+
+      <div class="alert-info" id="modal-alert" style="display:none;"></div>
+
+      <!-- countdown -->
+      <div class="countdown-wrap" id="section-countdown">
+        <div class="countdown-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#dde8f5" stroke-width="10"/>
+            <circle id="ring-circle" cx="50" cy="50" r="42" fill="none"
+              stroke="#2a5298" stroke-width="10"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              stroke-linecap="round"/>
+          </svg>
+          <div class="num" id="cnt-num">60</div>
+        </div>
+        <div class="countdown-label">⏳ รอให้ฟอร์มโหลดพร้อม...</div>
+        <div class="countdown-sub" id="cnt-sub">Playwright จะเริ่มใน <span id="cnt-sec">60</span> วินาที</div>
+      </div>
+
+      <!-- filling progress -->
+      <div id="section-progress" style="display:none">
+        <div style="text-align:center;color:#2a5298;font-size:14px;font-weight:600;margin-bottom:12px">
+          <span class="spinner"></span> กำลังกรอกข้อมูลอัตโนมัติ...
+        </div>
+        <div class="prog-bar-bg">
+          <div class="prog-bar-fill" id="prog-fill" style="width:0%"></div>
+        </div>
+        <div class="prog-pct" id="prog-pct">0%</div>
+      </div>
+
+      <!-- done -->
+      <div id="section-done" style="display:none;text-align:center;padding:10px 0">
+        <div style="font-size:44px;margin-bottom:8px">🎉</div>
+        <div style="font-size:16px;font-weight:700;color:#1a7a45" id="done-text">กรอกข้อมูลเสร็จสมบูรณ์!</div>
+      </div>
+
+      <!-- log -->
+      <div class="log-box" id="log-box" style="display:none"></div>
+
+      <button class="btn-close" id="modal-close-btn" onclick="closeModal()" style="display:none">
+        ✕ ปิด
+      </button>
+      <button class="btn-close green" id="modal-done-btn" onclick="closeModal()" style="display:none">
+        ✅ เสร็จสิ้น — ปิดหน้าต่าง
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- อ่าน username จาก sessionStorage ----
+// base path — รองรับทั้ง localhost:3000 และ proxy /dmis/
+const API_BASE = /^\/dmis(\/|$)/.test(location.pathname) ? '/dmis' : '';
+
+const storedUser = sessionStorage.getItem('dmis_user');
+if (storedUser) document.getElementById('display-user').textContent = storedUser;
+
+// ---- ตรวจ server health (retry 3 ครั้ง ก่อนแสดง error) ----
+(function checkServer(attempt) {
+  // ถ้าเปิดเป็น file:// ไม่ต้องตรวจ
+  if (location.protocol === 'file:') {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;padding:10px 20px;font-size:15px;font-weight:700;text-align:center;';
+    bar.innerHTML = '⚠️ กรุณาเปิดผ่าน <a href="http://localhost:3000" style="color:#fff">http://localhost:3000</a> ไม่ใช่เปิดไฟล์โดยตรง';
+    document.body.prepend(bar);
+    return;
+  }
+  fetch(API_BASE + '/api/health')
+    .then(r => { if (!r.ok) throw new Error(); })
+    .catch(() => {
+      if (attempt < 3) {
+        // retry หลัง 1.5 วินาที
+        setTimeout(() => checkServer(attempt + 1), 1500);
+      } else {
+        const bar = document.createElement('div');
+        bar.id = 'server-down-bar';
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;padding:10px 20px;font-size:15px;font-weight:700;text-align:center;';
+        bar.innerHTML = '⚠️ ไม่สามารถเชื่อมต่อ server ได้ &nbsp;—&nbsp; คลิกขวา tray icon (มุมขวาล่าง) เลือก <strong>Restart Servers</strong> หรือรัน <strong>start_all.bat</strong> แล้ว <a href="javascript:location.reload()" style="color:#ffe;text-decoration:underline">รีเฟรช</a>';
+        document.body.prepend(bar);
+      }
+    });
+})(0);
+
+// ---- Panel switcher: home (welcome) / hemo-prep / form ----
+function showPanel(name) {
+  document.getElementById('panel-announce').style.display  = (name === 'welcome') ? '' : 'none';
+  document.getElementById('panel-hemo-prep').style.display = (name === 'hemo-prep') ? '' : 'none';
+  document.getElementById('panel-form').style.display      = (name === 'form') ? 'flex' : 'none';
+  window.__currentPanel = name;
+}
+
+// ---- คลิก "ประชาสัมพันธ์" → กลับไปหน้าต้อนรับ ----
+function showWelcome(e) {
+  if (e) e.preventDefault();
+  document.querySelectorAll('.top-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('nav-pr').classList.add('active');
+  document.querySelector('.sidebar-head').classList.remove('active');
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+  showPanel('welcome');
+}
+
+// ---- คลิก Hemodialysis ที่ top nav หรือ sidebar header → แสดง panel-hemo-prep ----
+function toggleSidebar(e) {
+  if (e) e.preventDefault();
+  document.querySelectorAll('.top-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('nav-hd').classList.add('active');
+  document.querySelector('.sidebar-head').classList.add('active');
+  // unhighlight submenu
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+  showPanel('hemo-prep');
+}
+
+function toggleMenu(el) {
+  // คลิก sidebar header → ทำหน้าที่เดียวกับ toggleSidebar (แสดง hemo-prep)
+  document.querySelectorAll('.top-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('nav-hd').classList.add('active');
+  el.classList.add('active');
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+  showPanel('hemo-prep');
+}
+
+// ---- Logout ----
+function doLogout(e) {
+  e.preventDefault();
+  sessionStorage.clear();
+  window.location.href = '/';
+}
+
+// ---- คลิกเมนู บันทึกข้อมูลฟอกไต → แสดง panel-form + register worker → Playwright เริ่ม ----
+function openFormMenu(e) {
+  if (e) e.preventDefault();
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+  document.getElementById('menu-record').classList.add('active');
+  doOpenForm();
+
+  // ลงทะเบียนเป็น worker เมื่อ user คลิกเมนูนี้ (ไม่ใช่ตอน WS เปิด)
+  // server จะ flush playwrightQueue → Playwright เริ่มทำงานหลังจากนี้
+  if (!window.__workerRegistered) {
+    window.__workerRegistered = true;
+    const _ws = window.__activeWS;
+    if (_ws && _ws.readyState === 1) {
+      try { _ws.send(JSON.stringify({ action: 'register', data: { role: 'worker' } })); } catch (_) {}
+      addInlineLog('🔗 ลงทะเบียน worker — รอ Playwright กรอกฟอร์ม...', 'ok');
+    }
+  }
+
+  // เริ่ม startAutoFill เมื่อกดเมนูนี้ (จะรอรับ JSON จาก WS หรือใช้ queue ที่อาจสะสมไว้)
+  if (typeof startAutoFill === 'function' && !window.__fillRunning) {
+    setTimeout(() => startAutoFill().catch(() => {}), 500);
+  }
+}
+
+function doOpenForm() {
+  document.getElementById('panel-announce').style.display  = 'none';
+  document.getElementById('panel-hemo-prep').style.display = 'none';
+  document.getElementById('panel-form').style.display      = 'flex';
+  window.__currentPanel = 'form';
+
+  // reset progress bar (ซ่อนไว้ก่อน จนกว่าจะกด Auto-Fill)
+  document.getElementById('pw-bar-wrap').style.display  = 'none';
+  document.getElementById('pw-done-bar').style.display  = 'none';
+  document.getElementById('pw-fill').style.width        = '0%';
+  document.getElementById('pw-pct-txt').textContent     = '0%';
+  document.getElementById('pw-log-inline').innerHTML    = '';
+  document.getElementById('pw-status-txt').textContent  = 'กำลังกรอกข้อมูลอัตโนมัติ...';
+
+  // โหลด iframe ถ้ายังไม่ได้โหลด
+  const iframe = document.getElementById('form-iframe');
+  if (iframe && !iframe.src.includes('hemodialysis_form')) {
+    iframe.src = '/hemodialysis_form.html';
+  }
+}
+
+// ---- verify mode helper (global) ----
+const VERIFY_KEY = 'hd_registry_verify_mode';
+
+// ---- Connection monitor + resume state ----
+const PROGRESS_KEY = 'dmis_fill_progress'; // เก็บ {patients, index, success, failed}
+let connState = { online: true, ws: null, retries: 0 };
+let connDialogResolve = null; // ใช้ปลุก loop ให้ resume
+
+function saveProgress(state) {
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(state)); } catch(_) {}
+}
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); } catch(_) { return null; }
+}
+function clearProgress() { localStorage.removeItem(PROGRESS_KEY); }
+
+// แสดง popup เมื่อหลุดการเชื่อมต่อ
+function showDisconnectPopup() {
+  if (document.getElementById('disconn-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'disconn-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9500;display:flex;align-items:center;justify-content:center;font-family:inherit';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:10px;box-shadow:0 8px 36px rgba(0,0,0,0.4);width:440px;overflow:hidden">
+      <div style="background:#c0392b;color:#fff;padding:14px 20px;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">⚠</span> ขาดการเชื่อมต่อกับระบบทะเบียน
+      </div>
+      <div style="padding:24px 24px 20px;text-align:center">
+        <div id="disconn-spin" style="font-size:42px;margin-bottom:10px;animation:spin 2s linear infinite">🔄</div>
+        <style>@keyframes spin {to{transform:rotate(360deg)}}</style>
+        <div style="font-size:15px;color:#333;line-height:1.7;margin-bottom:8px">
+          <strong>การคีย์ข้อมูลถูกหยุดชั่วคราว</strong><br>
+          ระบบจะกลับมาคีย์ข้อมูลต่อโดยอัตโนมัติเมื่อเชื่อมต่อสำเร็จ
+        </div>
+        <div id="disconn-status" style="font-size:13px;color:#888;margin-top:12px">กำลังพยายามเชื่อมต่อใหม่...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+function hideDisconnectPopup() {
+  const o = document.getElementById('disconn-overlay');
+  if (o) o.remove();
+}
+function updateDisconnectStatus(txt) {
+  const el = document.getElementById('disconn-status');
+  if (el) el.textContent = txt;
+}
+
+// ---- Worker state สำหรับรับเคสจาก WebSocket ----
+let wsRecvBuffer = [];
+let wsRecvTimer  = null;
+
+// push เคสที่รับจาก WS เข้า fill flow:
+//   - ถ้ามี __activePatients (loop กำลังทำงาน) → append → loop จะวนต่ออัตโนมัติ
+//   - ถ้าไม่มี → เก็บใน localStorage queue + trigger startAutoFill
+function pushWsCaseToFill(data) {
+  if (window.__activePatients && Array.isArray(window.__activePatients)) {
+    window.__activePatients.push(data);
+    return;
+  }
+  let q = [];
+  try { q = JSON.parse(localStorage.getItem('ws_patients_queue') || '[]'); } catch (_) {}
+  q.push(data);
+  try { localStorage.setItem('ws_patients_queue', JSON.stringify(q)); } catch (_) {}
+
+  // ❗️ trigger startAutoFill เฉพาะเมื่ออยู่ใน panel-form แล้ว
+  //    ถ้ายังอยู่หน้าต้อนรับ/hemo-prep — เก็บใน queue รอ user คลิกเมนู "บันทึกข้อมูลฟอกไต"
+  if (window.__currentPanel === 'form' && !window.__fillRunning && typeof startAutoFill === 'function') {
+    setTimeout(() => { startAutoFill().catch(() => {}); }, 300);
+  }
+}
+
+// ส่ง filled ack กลับ server หลัง save success → server forward เป็น response กลับ sender
+function sendFilledAck(id, vn, status = 'OK', message) {
+  if (id == null && !vn) return;  // ต้องมีอย่างน้อย vn
+  const ws = window.__activeWS;
+  if (!ws || ws.readyState !== 1) return;
+  const payload = { action: 'filled', data: { id, vn, status, message } };
+  ws.send(JSON.stringify(payload));
+  console.log('[WS DMIS] ส่ง filled ack vn=' + vn + ' status=' + status);
+}
+
+// Modal popup — แจ้งว่าบันทึกเสร็จและส่งสถานะกลับ client แล้ว
+// แสดง JSON ที่ส่งกลับเพื่อตรวจสอบ มีปุ่ม Copy + ปิด + auto-dismiss ใน 4 วินาที
+function showAckSentPopup(payload) {
+  // ปิด popup ack เก่าถ้ามี (กัน popup ค้าง)
+  const old = document.getElementById('ws-ack-modal');
+  if (old) old.remove();
+
+  const data    = payload.data || {};
+  const ok      = data.status === 'OK';
+  const headBg  = ok ? '#1a3a7a' : '#c0392b';
+  const accent  = ok ? '#1a3a7a' : '#c0392b';
+
+  const m = document.createElement('div');
+  m.id = 'ws-ack-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit';
+  m.innerHTML = `
+    <div style="background:#fff;border-radius:10px;width:90%;max-width:680px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3);animation:popin .25s ease">
+      <div style="background:${headBg};color:#fff;padding:14px 22px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700;font-size:16px">📤 บันทึกเสร็จ — ส่งสถานะกลับ client แล้ว</div>
+        <button id="ws-ack-close" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;padding:0 6px">×</button>
+      </div>
+      <div style="padding:14px 22px;background:${ok?'#eef3ff':'#fdecea'};border-bottom:1px solid #c0cce8;font-size:14px;line-height:1.7">
+        <strong>action:</strong> <code>filled</code>
+        &nbsp;|&nbsp; <strong>id:</strong> <code>${data.id}</code>
+        ${data.vn ? '&nbsp;|&nbsp; <strong>vn:</strong> <code>' + data.vn + '</code>' : ''}
+        &nbsp;|&nbsp; <strong>status:</strong> <code style="color:${accent};font-weight:700">${data.status}</code>
+        &nbsp;|&nbsp; ${new Date().toLocaleTimeString()}
+      </div>
+      <div style="flex:1;overflow:auto;padding:14px 22px;background:#1e1e1e">
+        <pre style="margin:0;color:#dcdcdc;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-all">${JSON.stringify(payload, null, 2)}</pre>
+      </div>
+      <div style="padding:12px 22px;background:#f6f8fc;border-top:1px solid #c0cce8;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 10px 10px">
+        <span id="ws-ack-counter" style="font-size:12px;color:#888">ปิดอัตโนมัติใน <b>4</b> วินาที</span>
+        <div style="display:flex;gap:8px">
+          <button id="ws-ack-copy" style="padding:8px 18px;background:#fff;border:1px solid ${accent};color:${accent};border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600">📋 Copy JSON</button>
+          <button id="ws-ack-ok"   style="padding:8px 22px;background:${accent};color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600">ตกลง</button>
+        </div>
+      </div>
+    </div>
+    <style>@keyframes popin { from { transform:scale(.9); opacity:0 } to { transform:scale(1); opacity:1 } }</style>`;
+  document.body.appendChild(m);
+
+  const close = () => { try { m.remove(); } catch(_) {} };
+  document.getElementById('ws-ack-close').onclick = close;
+  document.getElementById('ws-ack-ok').onclick    = close;
+  document.getElementById('ws-ack-copy').onclick  = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      document.getElementById('ws-ack-copy').textContent = '✓ คัดลอกแล้ว';
+    } catch(_) {}
+  };
+  m.onclick = e => { if (e.target === m) close(); };
+
+  // auto-dismiss countdown
+  let n = 4;
+  const counterEl = document.getElementById('ws-ack-counter');
+  const timer = setInterval(() => {
+    n--;
+    if (counterEl && document.body.contains(m)) counterEl.innerHTML = `ปิดอัตโนมัติใน <b>${n}</b> วินาที`;
+    if (n <= 0) { clearInterval(timer); close(); }
+  }, 1000);
+}
+
+// ---- Popup แสดง JSON ที่รับมาจาก WebSocket (debug/ตรวจสอบ) ----
+
+function showWsReceivePopup(records) {
+  const old = document.getElementById('ws-recv-modal');
+  if (old) old.remove();
+
+  const m = document.createElement('div');
+  m.id = 'ws-recv-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit';
+  m.innerHTML = `
+    <div style="background:#fff;border-radius:10px;width:90%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+      <div style="background:#2a7c30;color:#fff;padding:14px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:700;font-size:16px">📥 รับ JSON จาก WebSocket แล้ว</div>
+        <button id="ws-recv-close" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;padding:0 6px">×</button>
+      </div>
+      <div style="padding:14px 22px;background:#e9f7ea;border-bottom:1px solid #b9e0bb;font-size:14px;line-height:1.7">
+        <strong>รับข้อมูลแล้ว:</strong> ${records.length} record &nbsp;|&nbsp; <code>ws://localhost:3002/ws</code>
+        &nbsp;|&nbsp; ${new Date().toLocaleTimeString()}
+      </div>
+      <div style="flex:1;overflow:auto;padding:14px 22px;background:#1e1e1e">
+        <pre style="margin:0;color:#dcdcdc;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-all">${JSON.stringify(records.map(d => ({ action: 'new', data: d })), null, 2)}</pre>
+      </div>
+      <div style="padding:12px 22px;background:#f6f8fc;border-top:1px solid #c0cce8;display:flex;justify-content:flex-end;gap:8px;border-radius:0 0 10px 10px">
+        <button id="ws-recv-copy" style="padding:8px 18px;background:#fff;border:1px solid #2a7c30;color:#2a7c30;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600">📋 Copy JSON</button>
+        <button id="ws-recv-ok" style="padding:8px 22px;background:#2a7c30;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600">ตกลง</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+
+  const close = () => m.remove();
+  document.getElementById('ws-recv-close').onclick = close;
+  document.getElementById('ws-recv-ok').onclick    = close;
+  document.getElementById('ws-recv-copy').onclick  = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(records.map(d => ({ action: 'new', data: d })), null, 2));
+      document.getElementById('ws-recv-copy').textContent = '✓ คัดลอกแล้ว';
+    } catch (_) {}
+  };
+  m.onclick = e => { if (e.target === m) close(); };
+}
+
+// เปิด WebSocket ไปที่ registry แล้ว auto-reconnect
+function startConnectionMonitor() {
+  const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  function connect() {
+    let ws;
+    try { ws = new WebSocket(wsUrl); }
+    catch (e) { setTimeout(connect, 3000); return; }
+    connState.ws = ws;
+
+    ws.onopen = () => {
+      connState.online = true;
+      connState.retries = 0;
+      hideDisconnectPopup();
+      // ไม่ register เป็น worker ทันที — รอให้ user คลิกเมนู "บันทึกข้อมูลฟอกไต" ก่อน
+      // (worker จะ register เมื่อ openFormMenu() ถูกเรียก)
+      window.__activeWS = ws;
+      if (connDialogResolve) { connDialogResolve(); connDialogResolve = null; }
+    };
+    ws.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { console.warn('[WS DMIS] parse error:', e); return; }
+      console.log('[WS DMIS] ⬇ message:', msg);
+
+      // 🏁 registry แจ้งว่าเคสสุดท้ายแล้ว → เด้ง popup เสร็จสิ้น (ครั้งเดียว)
+      if (msg.action === 'done') {
+        const total   = msg.data?.total   || 0;
+        const success = msg.data?.success || 0;
+        addInlineLog(`🏁 รับ done จาก registry — บันทึกครบทุกเคสแล้ว`, 'ok');
+        try { showClaimDonePopup(success, total); } catch (e) { console.error('[done popup]', e); }
+        return;
+      }
+
+      if (msg.action !== 'new' || !msg.data) {
+        console.log('[WS DMIS] skip — action=' + msg.action);
+        return;
+      }
+      console.log('[WS DMIS] ✓ new case id=' + msg.data.id + ' vn=' + msg.data.vn);
+
+      // 1) รับข้อมูล (ไม่แสดง popup)
+      try {
+        console.log('[WS DMIS] ✓ รับ JSON vn=' + (msg.data && msg.data.vn));
+      } catch (e) {
+        console.error('[WS DMIS] error:', e);
+      }
+
+      // 2) push เข้า fill queue (loop จะกรอกฟอร์มเอง)
+      pushWsCaseToFill(msg.data);
+    };
+    ws.onclose = () => {
+      connState.online = false;
+      connState.retries++;
+      // แสดง popup เฉพาะถ้ากำลังคีย์อยู่
+      if (loadProgress()) {
+        showDisconnectPopup();
+        updateDisconnectStatus(`กำลังพยายามเชื่อมต่อใหม่... (ครั้งที่ ${connState.retries})`);
+      }
+      const delay = Math.min(2000 + connState.retries * 1000, 10000);
+      setTimeout(connect, delay);
+    };
+    ws.onerror = () => { try { ws.close(); } catch(_) {} };
+  }
+  connect();
+}
+// เริ่ม monitor ทันทีที่ page load
+startConnectionMonitor();
+
+// รอจน online (ใช้ใน loop)
+async function waitForOnline() {
+  if (connState.online) return;
+  showDisconnectPopup();
+  await new Promise(resolve => { connDialogResolve = resolve; });
+}
+function isVerifyMode() { return localStorage.getItem(VERIFY_KEY) === 'true'; }
+
+// ---- เริ่ม Auto-Fill: ดึงข้อมูลจาก server แล้วเปิด Playwright กรอกข้อมูล ----
+async function startAutoFill() {
+  document.getElementById('pw-bar-wrap').style.display = '';
+  document.getElementById('pw-done-bar').style.display = 'none';
+
+  // 0) ตรวจ progress ที่ค้างจากครั้งก่อน — ถ้ามีให้ถามว่าจะ resume ไหม
+  const saved = loadProgress();
+  if (saved && saved.patients && saved.patients.length && saved.index < saved.patients.length) {
+    const goon = await showResumeConfirm(saved.index, saved.patients.length);
+    if (goon) {
+      addInlineLog(`🔄 รันต่อจากเคสที่ ${saved.index + 1}/${saved.patients.length}`, 'ok');
+      await fillPatientsInIframe(saved.patients, saved.index, saved.success || 0, saved.failed || 0);
+      return;
+    } else {
+      clearProgress();
+    }
+  }
+
+  // 1) ตรวจ queue จาก WebSocket (ถูก push โดย pushWsCaseToFill เมื่อรับ message จาก WS)
+  let patients = [];
+  try {
+    const wsQueue = localStorage.getItem('ws_patients_queue');
+    if (wsQueue) {
+      patients = JSON.parse(wsQueue);
+      if (patients.length) {
+        // ── ข้อความแจ้งเตือนเริ่มต้น (รับ JSON จาก client ผ่าน WebSocket) ──
+        addInlineLog('🐍 กำลังรัน Python hd_autofill.py ...', 'info');
+        addInlineLog('🐍 HD Auto-Fill Python Script', 'info');
+        addInlineLog('รับข้อมูลจาก json ที่ส่งจาก client', 'ok');
+        addInlineLog('🌐 Server : http://localhost:3000', 'info');
+        // แสดงรายการแรก พร้อมวันที่รับบริการ (onset)
+        const r0 = patients[0] || {};
+        const onsetStr = (() => {
+          const v = r0.onset; if (!v) return '';
+          try { return new Date(v).toLocaleDateString('th-TH'); } catch { return String(v).slice(0,10); }
+        })();
+        const hn0 = r0.hn || '-';
+        addInlineLog(`👤 รายการแรก : | HN: ${hn0} | วันที่: ${onsetStr}`, 'info');
+        addInlineLog('✅ Python เสร็จสิ้น — JS กำลังกรอกฟอร์ม...', 'ok');
+        localStorage.removeItem('ws_patients_queue');
+      }
+    }
+  } catch (_) {}
+
+  // 2) ถ้าไม่มีข้อมูลจาก WebSocket queue:
+  //    - verify mode ON: รอ WS message มาให้ — ไม่ดึง bulk จาก /api/start-fill
+  //    - verify mode OFF: fallback ดึง bulk จาก /api/start-fill (REST → registry MySQL, ไม่ใช่ Excel)
+  if (!patients.length) {
+    if (isVerifyMode()) {
+      addInlineLog('🔍 โหมดตรวจสอบ — รอรับข้อมูลทีละเคสผ่าน json', 'info');
+      document.getElementById('pw-status-txt').textContent = '🔍 รอรับข้อมูลจาก json...';
+      window.__fillRunning = false;
+      return;
+    }
+    const filterParams = getUrlParams();
+    addInlineLog('⏳ กำลังรับข้อมูลจาก json', 'info');
+    try {
+      const res = await fetch(API_BASE + '/api/start-fill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filterParams),
+      });
+      const d = await res.json();
+      if (!d.success) { addInlineLog('❌ ' + (d.message || 'เกิดข้อผิดพลาด'), 'err'); return; }
+      patients = d.patients || [];
+    } catch(e) {
+      addInlineLog('❌ ไม่สามารถเชื่อมต่อ server ได้: ' + e.message, 'err');
+      return;
+    }
+  }
+
+  if (!patients.length) { addInlineLog('⚠️ ไม่พบข้อมูลที่ตรงเงื่อนไข', 'info'); return; }
+  addInlineLog('📋 เริ่มกรอกข้อมูล', 'ok');
+  await fillPatientsInIframe(patients);
+}
+
+// ---- กรอกข้อมูลผู้ป่วยทีละ record ใน iframe ----
+async function fillPatientsInIframe(patients, startIdx = 0, initSuccess = 0, initFailed = 0) {
+  // เปิดเผย array reference ให้ WS handler push เคสเพิ่มได้ตอน loop ยังทำงานอยู่
+  window.__activePatients = patients;
+  window.__fillRunning    = true;
+
+  const iframe = document.getElementById('form-iframe');
+  const D = 120;
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const noV = v => (v == null || v === '' || v === '—') ? '' : String(v).trim();
+
+  function parseISODate(str) {
+    if (!str || str === '—') return '';
+    const s = str.includes('T') ? str : str + 'T00:00:00';
+    const d = new Date(s);
+    if (isNaN(d)) return str.slice(0,10);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function parseTime(t) {
+    if (!t) return { hh:'', mm:'' };
+    const s = String(t);
+    // Time string ขึ้นต้นด้วย HH:MM → ใช้ตรงๆ เช่น "21:33:00"
+    if (/^\d{1,2}:\d{2}/.test(s)) {
+      const m = s.match(/^(\d{1,2}):(\d{2})/);
+      if (m) return { hh: m[1].padStart(2,'0'), mm: m[2] };
+    }
+    // ISO datetime → ดึงเวลาจาก T portion ตรงๆ (ไม่แปลง timezone)
+    if (/T(\d{2}):(\d{2})/.test(s)) {
+      const m = s.match(/T(\d{2}):(\d{2})/);
+      if (m) return { hh: m[1], mm: m[2] };
+    }
+    const m2 = s.match(/(\d{1,2}):(\d{2})/);
+    if (!m2) return { hh:'', mm:'' };
+    return { hh: m2[1].padStart(2,'0'), mm: m2[2] };
+  }
+
+  function setProgress(cur, total) {
+    const pct = Math.round(cur / total * 100);
+    document.getElementById('pw-fill').style.width = pct + '%';
+    document.getElementById('pw-pct-txt').textContent = pct + '%';
+  }
+
+  // รอให้ iframe โหลดเสร็จ
+  await new Promise(resolve => {
+    if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') { resolve(); return; }
+    iframe.onload = resolve;
+    setTimeout(resolve, 3000);
+  });
+  await delay(500);
+
+  // suppress ทุก confirm/alert ของ iframe ตลอด loop (ป้องกัน popup "ต้องการเริ่มใหม่" ฯลฯ)
+  const fw0 = iframe.contentWindow;
+  const _origConfirm = fw0.confirm;
+  const _origAlert   = fw0.alert;
+  fw0.confirm = () => true;
+  fw0.alert   = () => {};
+
+  let success = initSuccess, failed = initFailed;
+
+  for (let i = startIdx; i < patients.length; i++) {
+    // เช็คการเชื่อมต่อก่อนเริ่มแต่ละเคส — รอจน online ค่อย continue
+    await waitForOnline();
+
+    // save progress ก่อนเริ่มเคสนี้ (ถ้าหลุดจะ resume กลับมาที่ index นี้)
+    saveProgress({ patients, index: i, success, failed });
+
+    const r = patients[i];
+    setProgress(i, patients.length);
+    const name = noV(r.ptname);
+    addInlineLog(`📋 กรอก ${i+1}/${patients.length}: ${name} (HN: ${noV(r.hn)})`, 'info');
+    document.getElementById('pw-status-txt').textContent = `กำลังกรอก ${i+1}/${patients.length}: ${name}`;
+
+    try {
+      const doc = iframe.contentDocument;
+      const fw  = iframe.contentWindow;
+
+      // reset form (ยกเว้น record แรก)
+      if (i > 0) {
+        const btnNew = doc.querySelector('button.btn-new');
+        if (btnNew) { btnNew.click(); await delay(400); }
+      }
+
+      const q      = id => doc.querySelector(id.startsWith('#') || id.startsWith('[') ? id : '#' + id);
+      const set    = (id, v)      => { const el = q(id); if (el && v != null && v !== '') el.value = v; };
+      const setTxt = (id, v)      => { const el = q(id); if (el && v != null && v !== '') el.textContent = v; };
+      const fill   = async(id, v) => { const el = q(id); if (el && v != null && v !== '') { el.value = v; el.dispatchEvent(new Event('input',{bubbles:true})); await delay(D); } };
+      const sel   = async(id, v) => { const el = q(id); if (el && v != null && v !== '') { el.value = v; el.dispatchEvent(new Event('change',{bubbles:true})); await delay(D); } };
+      const radio = (nm, val)    => { if (!val) return; const el = doc.querySelector(`input[name="${nm}"][value="${val}"]`); if (el) el.click(); };
+      const setDate = (id, v)    => { if (!v) return; const el = q(id); if (el) { el.value = v; el.dispatchEvent(new Event('change',{bubbles:true})); } };
+
+      const isUCS = (noV(r.hipdata) || '').toUpperCase() === 'UCS';
+
+      // ข้อมูลบุคคล — กรอก PID เสมอ ไม่ว่าสิทธิ์จะเป็น UCS หรือไม่
+      set('pid', noV(r.pid));
+      // fullname / dob / age_str เป็น span display-box — ใช้ textContent
+      setTxt('fullname', noV(r.ptname));
+      setTxt('dob',      parseISODate(noV(r.dob)));
+      setTxt('age_str',  r.age_y ? r.age_y + ' ปี' : '');
+      setTxt('patient_type_display', noV(r.patient_type) || noV(r.pttype) || '');
+      set('hn', noV(r.hn));
+      await delay(D);
+
+      // SQL ให้ hd_sdate_date/hd_edate_date เป็น date string
+      // และ start_hh/end_hh เป็น time string (HH:MM:SS) — parseTime แยก hh/mm ให้
+      const st = parseTime(noV(r.start_hh  || r.session_onset_time || r.onset_time));
+      const et = parseTime(noV(r.end_hh    || r.session_off_time   || r.off_time));
+
+      // วันที่/เวลาเริ่ม
+      setDate('#hd_sdate_date', noV(r.hd_sdate_date || r.onset));
+      await sel('#start_hh', st.hh); await sel('#start_mm', st.mm);
+      await fill('#sweight', noV(r.pre_weight));
+      await fill('#ssbp', noV(r.pre_bps)); await fill('#sdbp', noV(r.pre_bpd));
+
+      // วันที่/เวลาสิ้นสุด
+      setDate('#hd_edate_date', noV(r.hd_edate_date || r.onset));
+      await sel('#end_hh', et.hh); await sel('#end_mm', et.mm);
+      // trigger calcTime() → อัพเดท "รวมเวลาที่ให้บริการ" + แสดง row_remark ถ้าน้อยกว่า 4 ชม.
+      try { const fw = iframe.contentWindow; if (typeof fw.calcTime === 'function') fw.calcTime(); } catch(_) {}
+      await delay(D);
+      await fill('#eweight', noV(r.post_weight));
+      await fill('#esbp', noV(r.post_bps)); await fill('#edbp', noV(r.post_bpd));
+
+      // KT/V + Lab
+      for (const [id, val] of [
+        ['#ktv_height', r.height], ['#ktv_serum_creatinine', r.creatinine],
+        ['#ktv_serum_albumin', r.albumin], ['#ktv_ultrafiltration', r.ultrafiltration_l ?? r.ultrafiltration_kg ?? r.ultrafiltration],
+        ['#ktv_hb', r.hb], ['#ktv_pre_dialysis_bun', r.pre_bun || r.pre_dialysis_bun],
+        ['#ktv_post_dialysis_bun', r.post_bun || r.post_dialysis_bun], ['#bld_flow_rate', r.blood_flow_rate],
+      ]) { await fill(id, noV(val)); }
+
+      // Radio buttons — ค่าตรงกับ value ของ form
+      const mapMem = v => {
+        const s = (v||'').toLowerCase();
+        if (s.includes('unsub') || (s.includes('cellul') && !s.includes('sub'))) return '1';
+        if (s.includes('sub'))   return '2';
+        if (s.includes('synth')) return '3';
+        return null;
+      };
+      const mapDia = v => {
+        const s = (v||'').toLowerCase();
+        if (s.includes('dbl') || s.includes('double')) return '3';
+        if (s.includes('high'))  return '2';
+        if (s.includes('low'))   return '1';
+        return null;
+      };
+      // vascular: ใช้ cath ก่อน แล้วค่อย vascular_access
+      const mapVas = (vas, cath) => {
+        const c = (cath||'').toLowerCase();
+        const v = (vas||'').toLowerCase();
+        if (c.includes('perm'))           return '3'; // pem cath
+        if (c.includes('dlc') || c.includes('double lumen')) return '4'; // temp cath
+        if (v.includes('shunt'))          return '1';
+        if (v.includes('graft'))          return '2';
+        if (v.includes('perm'))           return '3';
+        if (v.includes('temp'))           return '4';
+        return null;
+      };
+      const mapSpc = v => {
+        const s = (v||'').toLowerCase();
+        if (s.includes('complete'))   return 'C';
+        if (s.includes('unstable'))   return 'U';
+        if (s.includes('hemo'))       return 'F';
+        if (s.includes('initial'))    return 'I';
+        return null;
+      };
+
+      radio('membrane_type',  mapMem(r.membrane));
+      radio('dialyzer_type',  mapDia(r.dialyzer));
+      radio('vascular_access',mapVas(r.vascular_access, r.cath));
+      radio('spec_cond',    mapSpc(r.spec_cond) || 'C');
+      radio('patient_type', noV(r.patient_type).toUpperCase() === 'IPD' ? 'IPD' : 'OPD');
+      radio('new_dialyzer', noV(r.new_dialyze).toLowerCase().startsWith('y') ? 'Y' : 'N');
+      radio('hd_mode',      noV(r.hd_mode).toLowerCase().includes('acute') ? 'A' : 'C');
+      await delay(D);
+
+      // เหตุผลฟอกน้อยกว่า 4 ชม.
+      if (noV(r.reason)) {
+        const reasonRow = doc.getElementById('row_remark');
+        const reasonSel = doc.getElementById('remark_hour');
+        if (reasonRow) reasonRow.style.display = '';
+        if (reasonSel) {
+          const opts = Array.from(reasonSel.options);
+          const opt = opts.find(o => o.value === noV(r.reason))
+                   || opts.find(o => o.text.trim().includes(noV(r.reason)) || noV(r.reason).includes(o.text.trim().substring(0, 8)));
+          if (opt) {
+            reasonSel.value = opt.value;
+            reasonSel.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        await delay(D);
+      }
+
+      // Hct / HD Claim
+      await fill('#epo_hct', noV(r.hct));
+      await fill('#hd_claim_amount', noV(r.hd_claim).replace(/,/g,''));
+
+      // Extra items — กรอกเฉพาะ non-UCS (UCS = DMIS ไม่ต้องนำไปคีย์)
+      if (!isUCS) {
+        await fill('#iv_iron',   noV(r.iv_iron).replace(/,/g,''));
+        await fill('#low_mol',   noV(r.lowmolheparin).replace(/,/g,''));
+        await fill('#dbl_lumen', noV(r.dbllumen).replace(/,/g,''));
+        await fill('#par_nutr',  noV(r.parnutr).replace(/,/g,''));
+        await fill('#lab_xray',  noV(r.lab_xray).replace(/,/g,''));
+        await fill('#human_alb', noV(r.humanalb).replace(/,/g,''));
+      }
+
+      // ESA/EPO rows — เพิ่มเฉพาะยาที่หาพบ ไม่เหลือ row ว่าง
+      const esaDrugs   = noV(r.esa_epo) ? noV(r.esa_epo).split('\n').filter(Boolean) : [];
+      const esaQtys    = noV(r.qty)     ? noV(r.qty).split('\n').filter(Boolean)     : [];
+      const fw2        = iframe.contentWindow;
+      const epoProds   = fw2.epoProducts || [];
+
+      // reset esaRowCount ในฟอร์ม (ล้าง row เก่าถ้ามี)
+      const esaBody = doc.getElementById('esa_body');
+      if (esaBody) esaBody.innerHTML = '';
+      fw2.esaRowCount = 0;
+
+      for (let di = 0; di < esaDrugs.length; di++) {
+        const drugName = esaDrugs[di].trim();
+        const drugLow  = drugName.toLowerCase();
+        const qtyVal   = noV(esaQtys[di] || '');
+
+        // fuzzy match ชื่อยา
+        const match = epoProds.find(p => {
+          const pn = p.name.toLowerCase();
+          return pn === drugLow
+            || drugLow.includes(pn.split(' ')[0])
+            || pn.includes(drugLow.split(' ')[0]);
+        });
+
+        // ถ้าไม่เจอยาใน list → ใช้ 'other' (X99999)
+        const prod = match || epoProds.find(p => p.id === 'X99999');
+        if (!prod) continue;
+
+        // เพิ่ม row แล้วใส่ข้อมูล
+        if (typeof fw2.addEsaRow === 'function') fw2.addEsaRow();
+        await delay(150);
+        const rowIdx = fw2.esaRowCount;
+        if (!rowIdx) continue;
+
+        const selEl = doc.getElementById('esa_prod_' + rowIdx);
+        if (selEl) {
+          selEl.value = prod.id;
+          selEl.dispatchEvent(new Event('change', { bubbles: true }));
+          await delay(D);
+        }
+
+        if (qtyVal) {
+          const qtyEl = doc.getElementById('esa_qty_' + rowIdx);
+          if (qtyEl) {
+            qtyEl.value = qtyVal;
+            qtyEl.dispatchEvent(new Event('input', { bubbles: true }));
+            await delay(D);
+          }
+        }
+
+        if (typeof fw2.autoEsaClaim === 'function') fw2.autoEsaClaim(rowIdx);
+        await delay(100);
+      }
+
+      if (typeof fw2.calcTotal === 'function') fw2.calcTotal();
+
+      // Playwright (headless) จัดการ submit + ส่ง OK แล้ว
+      // visible browser กรอกฟอร์มเพื่อแสดงข้อมูลเท่านั้น — ไม่รอกดบันทึก
+      await delay(300);
+      success++;
+      addInlineLog(`   ✅ กรอกฟอร์มเสร็จ — Playwright ส่ง OK แล้ว`, 'ok');
+
+      // บันทึกสถานะ claim=Y ลงฐานข้อมูล + แจ้ง registry tab
+      // หมายเหตุ: ต้องใช้ path ตรง /api/registry/claim (ไม่ผ่าน /dmis proxy)
+      // เพราะ endpoint นี้อยู่ใน server_registry.js ไม่ใช่ server.js
+      const REGISTRY_BASE = location.origin; // เช่น http://localhost:3001
+      try {
+        const claimBy = sessionStorage.getItem('dmis_user') || 'admin';
+        await fetch(REGISTRY_BASE + '/api/registry/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...r, claim_by: claimBy }),
+        });
+        // แจ้ง registry_main (tab อื่น) ผ่าน localStorage event
+        localStorage.setItem('dmis_claim_update', JSON.stringify({
+          vn: r.vn,
+          claim: 'Y',
+          claim_by: claimBy,
+          claim_at: new Date().toISOString(),
+        }));
+      } catch(_) {}
+
+    } catch(err) {
+      failed++;
+      addInlineLog(`   ❌ ข้อผิดพลาด: ${err.message}`, 'err');
+      sendFilledAck(r && r.id, r && r.vn, 'ERROR', err.message);
+    }
+  }
+
+  // ปิดสถานะ active loop — WS handler ครั้งหน้าจะ trigger startAutoFill ใหม่
+  window.__activePatients = null;
+  window.__fillRunning    = false;
+
+  // restore confirm/alert ของ iframe
+  fw0.confirm = _origConfirm;
+  fw0.alert   = _origAlert;
+
+  // ลบ progress เมื่อทำงานเสร็จครบทุกเคส (ไม่หลุดกลางทาง)
+  clearProgress();
+
+  setProgress(patients.length, patients.length);
+  addInlineLog(`✅ เสร็จสิ้น: สำเร็จ ${success} | ล้มเหลว ${failed}`, 'ok');
+  showDone();
+}
+
+// ---- popup ถาม resume ----
+function showResumeConfirm(idx, total) {
+  return new Promise(resolve => {
+    const old = document.getElementById('resume-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'resume-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9100;display:flex;align-items:center;justify-content:center;font-family:inherit';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:10px;box-shadow:0 8px 36px rgba(0,0,0,0.3);width:440px;overflow:hidden">
+        <div style="background:#1a6db5;color:#fff;padding:14px 20px;font-size:17px;font-weight:700">
+          🔄 พบงานที่ค้างอยู่
+        </div>
+        <div style="padding:24px 24px 20px">
+          <div style="font-size:15px;color:#333;line-height:1.7;margin-bottom:18px">
+            มีงานคีย์ข้อมูลค้างอยู่ที่<strong> เคส ${idx + 1}/${total}</strong><br>
+            ต้องการคีย์ต่อจากเคสนี้หรือเริ่มใหม่?
+          </div>
+          <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button id="rs-no" style="height:44px;padding:0 22px;background:#fff;color:#555;border:1.5px solid #ccc;border-radius:7px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">
+              เริ่มใหม่
+            </button>
+            <button id="rs-yes" style="height:44px;padding:0 28px;background:#1a6db5;color:#fff;border:none;border-radius:7px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">
+              ▶ คีย์ต่อ
+            </button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#rs-yes').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#rs-no').onclick  = () => { overlay.remove(); resolve(false); };
+  });
+}
+
+// ---- อ่าน filter params จาก URL ----
+function getUrlParams() {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    date_from : p.get('date_from') || new Date().toISOString().slice(0,10),
+    date_to   : p.get('date_to')   || new Date().toISOString().slice(0,10),
+    clinic    : p.get('clinic')    || 'all',
+    hn        : p.get('hn')        || '',
+    rights    : p.get('rights')    || 'all',
+  };
+}
+
+// ---- Page init: เริ่มที่ panel-welcome (home) — เมนู "ประชาสัมพันธ์" active โดย default ----
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.top-nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+  document.querySelector('.sidebar-head').classList.remove('active');
+  // active เมนู "ประชาสัมพันธ์" บน top nav
+  document.getElementById('nav-pr').classList.add('active');
+  showPanel('welcome');
+
+  // ❌ ไม่ trigger startAutoFill อัตโนมัติ จาก autostart=1 อีก —
+  //    user ต้องคลิกเมนู "บันทึกข้อมูลฟอกไต" ก่อน ค่อยเริ่มรับ JSON
+  //    (URL params ยังมีไว้สำหรับ filter ที่ใช้ตอน fallback REST)
+
+  // เมื่อมาจาก login (session มี dmis_user) → แค่ log ข้อความ ไม่ trigger flow
+  const loggedIn  = sessionStorage.getItem('dmis_user');
+  const loginMode = sessionStorage.getItem('dmis_login_mode') || '';
+  const alreadyRan = sessionStorage.getItem('dmis_python_ran');
+
+  if (loggedIn && !alreadyRan) {
+    if (loginMode === 'hd') {
+      setTimeout(() => document.getElementById('confirm-hd-modal').classList.add('show'), 800);
+    } else if (loginMode === 'dmis') {
+      sessionStorage.setItem('dmis_python_ran', '1');
+      // ไม่ auto-trigger openFormMenu แม้ autostart=1 — user ต้องคลิกแถบ Hemodialysis และเมนูด้วยตนเอง
+    }
+  }
+});
+
+// ---- Confirm HD popup handlers ----
+function onConfirmHdYes() {
+  document.getElementById('confirm-hd-modal').classList.remove('show');
+  sessionStorage.setItem('dmis_python_ran', '1');
+  exportAndRunPython();
+}
+function onConfirmHdNo() {
+  document.getElementById('confirm-hd-modal').classList.remove('show');
+  sessionStorage.setItem('dmis_python_ran', '1'); // ไม่ให้ popup ขึ้นซ้ำ
+  addInlineLog('ℹ️ ยกเลิกการส่งเคลม HD', 'info');
+}
+
+// ---- รอรับข้อมูลจากระบบทะเบียน (ผ่าน WebSocket) ----
+// เมื่อมี message มา → pushWsCaseToFill(data) → trigger startAutoFill() → fillPatientsInIframe
+async function exportAndRunPython() {
+  document.getElementById('pw-bar-wrap').style.display     = '';
+  document.getElementById('pw-done-bar').style.display     = 'none';
+  document.getElementById('pw-fill').style.width           = '0%';
+  document.getElementById('pw-pct-txt').textContent        = '0%';
+  document.getElementById('pw-log-inline').innerHTML       = '';
+  document.getElementById('pw-status-txt').textContent     = '📥 พร้อมรับข้อมูลจากระบบทะเบียน...';
+
+  addInlineLog('📥 ระบบพร้อมรับข้อมูลผู้ป่วยจากระบบทะเบียน', 'info');
+  addInlineLog('💡 ไปที่หน้าระบบทะเบียน → ติ๊ก "พร้อมส่ง" → กด "ส่งเคลม DMIS" เพื่อเริ่มส่งข้อมูล', 'info');
+}
+
+
+function backToAnnounce() {
+  showPanel('welcome');
+  document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+function addInlineLog(text, cls) {
+  const box = document.getElementById('pw-log-inline');
+  const d = document.createElement('div');
+  d.className = cls || 'info';
+  d.style.color = cls === 'ok' ? '#1a7a45' : cls === 'err' ? '#c0392b' : '#1a3a7a';
+  d.textContent = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ---- แสดง popup ยืนยันคีย์เคสถัดไป ----
+function showNextCaseConfirm(nextIdx, total, nextName) {
+  return new Promise(resolve => {
+    // ลบ overlay เก่าถ้ามี
+    const old = document.getElementById('next-case-overlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'next-case-overlay';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.55)',
+      'z-index:9000', 'display:flex', 'align-items:center', 'justify-content:center',
+      'font-family:inherit',
+    ].join(';');
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:10px;box-shadow:0 8px 36px rgba(0,0,0,0.3);
+        width:420px;overflow:hidden;">
+        <div style="background:#1a6db5;color:#fff;padding:14px 20px;font-size:17px;font-weight:700;
+          display:flex;align-items:center;gap:10px;">
+          📋 คีย์เคสถัดไปใช่หรือไม่?
+        </div>
+        <div style="padding:24px 24px 20px;">
+          <div style="font-size:16px;color:#333;line-height:1.8;margin-bottom:18px;">
+            บันทึกเคสสำเร็จแล้ว<br>
+            <span style="font-size:14px;color:#666;">
+              เคสถัดไป (${nextIdx}/${total}):
+              <strong style="color:#1a3a7a;">${nextName || '—'}</strong>
+            </span>
+          </div>
+          <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button id="nc-no"
+              style="height:44px;padding:0 22px;background:#fff;color:#555;
+                border:1.5px solid #ccc;border-radius:7px;font-size:15px;font-weight:700;
+                font-family:inherit;cursor:pointer;">
+              ❌ หยุด
+            </button>
+            <button id="nc-yes"
+              style="height:44px;padding:0 28px;background:#1a6db5;color:#fff;
+                border:none;border-radius:7px;font-size:15px;font-weight:700;
+                font-family:inherit;cursor:pointer;">
+              ✅ ไปเคสถัดไป
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#nc-yes').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#nc-no').onclick  = () => { overlay.remove(); resolve(false); };
+  });
+}
+
+function showClaimDonePopup(success, total) {
+  return new Promise(resolve => {
+    const old = document.getElementById('claim-done-overlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'claim-done-overlay';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.55)',
+      'z-index:9000', 'display:flex', 'align-items:center', 'justify-content:center',
+      'font-family:inherit',
+    ].join(';');
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:10px;box-shadow:0 8px 36px rgba(0,0,0,0.3);
+        width:400px;overflow:hidden;text-align:center;">
+        <div style="background:#1a7a45;color:#fff;padding:14px 20px;font-size:17px;font-weight:700;">
+          ✅ เสร็จสิ้น
+        </div>
+        <div style="padding:28px 24px 24px;">
+          <div style="font-size:42px;margin-bottom:12px;">🎉</div>
+          <div style="font-size:17px;font-weight:700;color:#1a7a45;margin-bottom:8px;">
+            การบันทึกเคลมเบิกเสร็จเรียบร้อยแล้ว
+          </div>
+          <div style="font-size:14px;color:#555;margin-bottom:24px;">
+            บันทึกสำเร็จ ${success} เคส จากทั้งหมด ${total} เคส
+          </div>
+          <button id="cd-ok"
+            style="height:44px;padding:0 40px;background:#1a7a45;color:#fff;
+              border:none;border-radius:7px;font-size:15px;font-weight:700;
+              font-family:inherit;cursor:pointer;">
+            ตกลง
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    overlay.querySelector('#cd-ok').onclick = () => { overlay.remove(); resolve(); };
+  });
+}
+
+// ---- SSE ----
+function startSSE() {
+  const es = new EventSource(API_BASE + '/api/progress');
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+
+    if (msg.type === 'log') {
+      addInlineLog(msg.text, msg.level === 'ok' ? 'ok' : msg.level === 'err' ? 'err' : 'info');
+    }
+
+    if (msg.type === 'progress') {
+      const pct = Math.round(msg.value);
+      document.getElementById('pw-fill').style.width = pct + '%';
+      document.getElementById('pw-pct-txt').textContent = pct + '%';
+      if (msg.value >= 100) {
+        es.close();
+        showDone();
+      }
+    }
+
+    if (msg.type === 'done') {
+      es.close();
+      showDone();
+    }
+
+    if (msg.type === 'error') {
+      es.close();
+      addInlineLog('❌ ' + msg.text, 'err');
+    }
+  };
+  es.onerror = () => { es.close(); };
+}
+
+// ---- countdown ring ----
+const CIRCUMFERENCE = 2 * Math.PI * 42; // ≈ 263.9
+
+function updateCountdown(remaining, total) {
+  const el    = document.getElementById('cnt-num');
+  const secEl = document.getElementById('cnt-sec');
+  const ring  = document.getElementById('ring-circle');
+  if (!el) return;
+  el.textContent  = remaining;
+  if (secEl) secEl.textContent = remaining;
+  const progress  = 1 - (remaining / total);
+  const offset    = CIRCUMFERENCE * (1 - progress);
+  ring.style.strokeDashoffset = offset;
+}
+
+// ---- log ----
+function addLog(text, cls) {
+  const box = document.getElementById('log-box');
+  const div = document.createElement('div');
+  div.className = 'log-line ' + (cls || 'info');
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ---- done ----
+function showDone() {
+  document.getElementById('section-progress').style.display = 'none';
+  document.getElementById('section-done').style.display = '';
+  document.getElementById('modal-title').textContent = 'กรอกข้อมูลเสร็จสมบูรณ์!';
+  document.getElementById('modal-alert').style.display = 'none';
+  document.getElementById('modal-done-btn').style.display = '';
+}
+
+// ---- ปุ่ม "ยืนยันการส่งเบิก" — เปิดหน้าตรวจสอบ claim_verify.html ----
+function openVerifyPage(e) {
+  if (e) e.preventDefault();
+
+  if (window.__fillRunning) {
+    alert('⚠️ ระบบกำลังกรอกข้อมูลอยู่\nกรุณารอให้เสร็จก่อนเปิดหน้าตรวจสอบ');
+    return;
+  }
+
+  // รวบรวม records จาก ws_patients_queue (+ __activePatients ถ้ามี)
+  let records = [];
+  try {
+    const raw = localStorage.getItem('ws_patients_queue');
+    if (raw) records = JSON.parse(raw);
+  } catch (_) {}
+
+  if (!records.length && window.__activePatients && Array.isArray(window.__activePatients)) {
+    records = [...window.__activePatients];
+  }
+
+  if (!records.length) {
+    alert('ℹ️ ยังไม่มีข้อมูลในคิว\nรับข้อมูลจากระบบทะเบียนก่อน แล้วกลับมากด "ยืนยันการส่งเบิก"');
+    return;
+  }
+
+  // เก็บไว้ให้ claim_verify.html อ่าน
+  try {
+    localStorage.setItem('claim_verify_records', JSON.stringify(records));
+  } catch (_) {}
+
+  const verifyUrl = (API_BASE || '') + '/claim_verify.html';
+  window.open(verifyUrl, 'claim-verify-window',
+    'width=1200,height=800,resizable=yes,scrollbars=no');
+}
+
+// อัปเดต badge จำนวนเคสในคิวบนปุ่ม
+function updateVerifyBadge() {
+  const badge = document.getElementById('verify-badge');
+  if (!badge) return;
+  try {
+    const q = JSON.parse(localStorage.getItem('ws_patients_queue') || '[]');
+    if (q.length > 0) {
+      badge.textContent = q.length;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (_) {
+    badge.style.display = 'none';
+  }
+}
+
+// ฟัง BroadcastChannel จาก claim_verify.html เมื่อ confirmed เสร็จ
+try {
+  const _verifyBC = new BroadcastChannel('dmis_verify');
+  _verifyBC.onmessage = (ev) => {
+    if (ev.data?.type !== 'verified') return;
+    const count = ev.data.count || 0;
+    updateVerifyBadge();
+    addInlineLog(`📋 ยืนยันแล้ว ${count} เคส — คลิกเมนู "บันทึกข้อมูลฟอกไต" เพื่อเริ่มกรอกฟอร์ม`, 'ok');
+    // ถ้าอยู่ใน panel-form แล้ว และยังไม่ได้รัน → trigger ทันที
+    if (window.__currentPanel === 'form' && !window.__fillRunning && typeof startAutoFill === 'function') {
+      setTimeout(() => startAutoFill().catch(() => {}), 500);
+    }
+  };
+} catch (_) {}
+
+// อัปเดต badge ทุก 3 วินาที
+setInterval(updateVerifyBadge, 3000);
+updateVerifyBadge();
+</script>
+</body>
+</html>

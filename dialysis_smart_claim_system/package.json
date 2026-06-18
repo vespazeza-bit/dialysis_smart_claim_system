@@ -1,0 +1,12 @@
+{
+  "name": "dialysis-smart-claim-proxy",
+  "version": "1.0.0",
+  "description": "Local proxy + MySQL write endpoint for Dialysis Smart Claim",
+  "main": "proxy.js",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.22.5"
+  }
+}
