@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<title>บันทึกข้อมูลฟอกไต HD</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Tahoma, Arial, sans-serif; font-size: 12px; background: #f4f7fc; color: #222; }
+
+.form-wrap { padding: 8px 12px; }
+
+.section-head {
+  background: #2a5298;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 5px 10px;
+  margin: 8px 0 4px;
+  border-radius: 3px;
+}
+
+table.ft { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #c0cce8; margin-bottom: 4px; }
+table.ft td { padding: 4px 6px; border: 1px solid #d8e4f4; vertical-align: middle; font-size: 12px; }
+table.ft td.lbl { background: #eef2fb; font-weight: 700; white-space: nowrap; width: 130px; color: #1a3a7a; }
+table.ft input[type=text], table.ft input[type=date], table.ft input[type=number], table.ft select {
+  width: 100%; border: 1px solid #b0bcd8; border-radius: 3px; padding: 3px 5px; font-size: 12px; font-family: inherit; background: #fff;
+}
+table.ft input[type=text]:focus, table.ft input[type=date]:focus,
+table.ft input[type=number]:focus, table.ft select:focus {
+  outline: none; border-color: #4a90e2; background: #f0f6ff;
+}
+.display-box {
+  display: inline-block;
+  min-width: 160px;
+  padding: 3px 7px;
+  background: #f8faff;
+  border: 1px solid #c8d8f0;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #333;
+  min-height: 22px;
+}
+.radio-row { display: flex; gap: 14px; flex-wrap: wrap; padding: 3px 0; }
+.radio-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; }
+
+.esa-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #c0cce8; }
+.esa-table th { background: #2a5298; color: #fff; padding: 4px 8px; font-size: 12px; text-align: center; }
+.esa-table td { padding: 4px 6px; border: 1px solid #d8e4f4; font-size: 12px; vertical-align: middle; }
+.esa-table input, .esa-table select { width: 100%; border: 1px solid #b0bcd8; border-radius: 3px; padding: 3px; font-size: 12px; font-family: inherit; }
+
+.btn-bar { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.btn { padding: 7px 20px; border: none; border-radius: 4px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.btn-primary { background: #2a5298; color: #fff; }
+.btn-primary:hover { background: #1a3a7a; }
+.btn-success { background: #1a7a45; color: #fff; }
+.btn-success:hover { background: #135c34; }
+.btn-new { background: #888; color: #fff; }
+.btn-new:hover { background: #666; }
+.btn-add { background: #fff; border: 1.5px solid #2a5298 !important; color: #2a5298; padding: 5px 14px; border-radius: 4px; font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 700; }
+.btn-del { background: #c0392b; color: #fff; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+
+.total-box { background: #eef2fb; border: 1.5px solid #2a5298; border-radius: 5px; padding: 10px 18px; display: inline-block; font-size: 14px; font-weight: 700; color: #2a5298; min-width: 220px; }
+.total-box span { font-size: 18px; }
+
+.saved-banner { display: none; background: #e6f9ee; border: 1px solid #7dcca0; border-radius: 4px; padding: 10px 16px; font-size: 14px; font-weight: 700; color: #1a7a45; margin-top: 10px; }
+
+.warn-row { display: none; background: #fffbe6; border: 1px solid #f5c518; border-radius: 3px; padding: 4px 10px; font-size: 12px; color: #7a5800; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="form-wrap">
+
+  <!-- ─── ส่วนที่ 1: ข้อมูลผู้ป่วย ─── -->
+  <div class="section-head">ข้อมูลผู้ป่วย</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">รหัสประจำตัว (PID)</td>
+      <td><input type="text" id="pid" placeholder="เลข 13 หลัก" maxlength="13"/></td>
+      <td class="lbl">HN</td>
+      <td><input type="text" id="hn"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">ชื่อ-นามสกุล</td>
+      <td colspan="3"><span class="display-box" id="fullname" style="min-width:260px"></span></td>
+    </tr>
+    <tr>
+      <td class="lbl">วันเกิด</td>
+      <td><span class="display-box" id="dob"></span></td>
+      <td class="lbl">อายุ</td>
+      <td><span class="display-box" id="age_str"></span></td>
+    </tr>
+    <tr>
+      <td class="lbl">ประเภทผู้ป่วย (สิทธิ์)</td>
+      <td colspan="3"><span class="display-box" id="patient_type_display" style="min-width:180px"></span></td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 2: ข้อมูลการฟอก (เริ่มต้น) ─── -->
+  <div class="section-head">เวลา/น้ำหนัก/ความดัน (เริ่มต้น)</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">วันที่ฟอกไต (เริ่ม)</td>
+      <td><input type="date" id="hd_sdate_date"/></td>
+      <td class="lbl">เวลาเริ่ม</td>
+      <td>
+        <select id="start_hh" style="width:54px">
+          <option value="">ชม.</option>
+          <script>for(var _h=0;_h<24;_h++){document.write('<option value="'+String(_h).padStart(2,'0')+'">'+String(_h).padStart(2,'0')+'</option>');}</script>
+        </select>
+        :
+        <select id="start_mm" style="width:54px">
+          <option value="">นาที</option>
+          <script>for(var _m=0;_m<60;_m++){document.write('<option value="'+String(_m).padStart(2,'0')+'">'+String(_m).padStart(2,'0')+'</option>');}</script>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">น้ำหนัก Pre (กก.)</td>
+      <td><input type="number" id="sweight" step="0.1" min="0" max="200"/></td>
+      <td class="lbl">ความดัน Pre (SBP/DBP)</td>
+      <td>
+        <input type="number" id="ssbp" style="width:60px" placeholder="SBP"/>
+        /
+        <input type="number" id="sdbp" style="width:60px" placeholder="DBP"/>
+        <span style="font-size:11px;color:#888"> mmHg</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 3: ข้อมูลการฟอก (สิ้นสุด) ─── -->
+  <div class="section-head">เวลา/น้ำหนัก/ความดัน (สิ้นสุด)</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">วันที่ฟอกไต (สิ้นสุด)</td>
+      <td><input type="date" id="hd_edate_date"/></td>
+      <td class="lbl">เวลาสิ้นสุด</td>
+      <td>
+        <select id="end_hh" style="width:54px">
+          <option value="">ชม.</option>
+          <script>for(var _h2=0;_h2<24;_h2++){document.write('<option value="'+String(_h2).padStart(2,'0')+'">'+String(_h2).padStart(2,'0')+'</option>');}</script>
+        </select>
+        :
+        <select id="end_mm" style="width:54px">
+          <option value="">นาที</option>
+          <script>for(var _m2=0;_m2<60;_m2++){document.write('<option value="'+String(_m2).padStart(2,'0')+'">'+String(_m2).padStart(2,'0')+'</option>');}</script>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl" colspan="4">
+        รวมเวลาที่ให้บริการ: <strong id="total_time_display" style="color:#2a5298;font-size:13px">–</strong>
+      </td>
+    </tr>
+    <tr id="row_remark" style="display:none">
+      <td class="lbl">เหตุผลฟอกน้อยกว่า 4 ชม.</td>
+      <td colspan="3">
+        <select id="remark_hour">
+          <option value="">-- เลือกเหตุผล --</option>
+          <option value="1">1 - ผู้ป่วยไม่ยินยอมรับบริการ</option>
+          <option value="2">2 - เครื่องไตเทียมขัดข้อง</option>
+          <option value="3">3 - ภาวะฉุกเฉิน/ตามแพทย์สั่ง</option>
+          <option value="4">4 - อื่นๆ</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">น้ำหนัก Post (กก.)</td>
+      <td><input type="number" id="eweight" step="0.1" min="0" max="200"/></td>
+      <td class="lbl">ความดัน Post (SBP/DBP)</td>
+      <td>
+        <input type="number" id="esbp" style="width:60px" placeholder="SBP"/>
+        /
+        <input type="number" id="edbp" style="width:60px" placeholder="DBP"/>
+        <span style="font-size:11px;color:#888"> mmHg</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 4: ค่า Lab / KT/V ─── -->
+  <div class="section-head">ค่า Lab / KT/V</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">ส่วนสูง (ซม.)</td>
+      <td><input type="number" id="ktv_height" step="0.1" min="100" max="220"/></td>
+      <td class="lbl">Serum Creatinine</td>
+      <td><input type="number" id="ktv_serum_creatinine" step="0.01" min="0"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">Serum Albumin</td>
+      <td><input type="number" id="ktv_serum_albumin" step="0.1" min="0" max="10"/></td>
+      <td class="lbl">Ultrafiltration (ล.)  </td>
+      <td><input type="number" id="ktv_ultrafiltration" step="0.01" min="0" max="20"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">Hb (g/dL)</td>
+      <td><input type="number" id="ktv_hb" step="0.1" min="0" max="30"/></td>
+      <td class="lbl">Blood Flow Rate (mL/min)</td>
+      <td><input type="number" id="bld_flow_rate" step="1" min="0" max="500"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">Pre-dialysis BUN</td>
+      <td><input type="number" id="ktv_pre_dialysis_bun" step="0.1" min="0"/></td>
+      <td class="lbl">Post-dialysis BUN</td>
+      <td><input type="number" id="ktv_post_dialysis_bun" step="0.1" min="0"/></td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 5: ตัวเลือก (Radio) ─── -->
+  <div class="section-head">ประเภทและสภาวะ</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">ชนิด Membrane</td>
+      <td colspan="3">
+        <div class="radio-row">
+          <label><input type="radio" name="membrane_type" value="1"> Unsubstituted Cellulose</label>
+          <label><input type="radio" name="membrane_type" value="2"> Substituted Cellulose</label>
+          <label><input type="radio" name="membrane_type" value="3"> Synthetic</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">ชนิด Dialyzer</td>
+      <td colspan="3">
+        <div class="radio-row">
+          <label><input type="radio" name="dialyzer_type" value="1"> Low flux</label>
+          <label><input type="radio" name="dialyzer_type" value="2"> High flux</label>
+          <label><input type="radio" name="dialyzer_type" value="3"> Double High flux</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">Vascular Access</td>
+      <td colspan="3">
+        <div class="radio-row">
+          <label><input type="radio" name="vascular_access" value="1"> AV Shunt/Fistula</label>
+          <label><input type="radio" name="vascular_access" value="2"> AV Graft</label>
+          <label><input type="radio" name="vascular_access" value="3"> Perm Cath</label>
+          <label><input type="radio" name="vascular_access" value="4"> Temp Cath (DLC)</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">Special Condition</td>
+      <td colspan="3">
+        <div class="radio-row">
+          <label><input type="radio" name="spec_cond" value="C"> Complete (C)</label>
+          <label><input type="radio" name="spec_cond" value="I"> Initial (I)</label>
+          <label><input type="radio" name="spec_cond" value="U"> Unstable (U)</label>
+          <label><input type="radio" name="spec_cond" value="F"> Hemodynamic (F)</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">ประเภท</td>
+      <td>
+        <div class="radio-row">
+          <label><input type="radio" name="patient_type" value="OPD"> OPD</label>
+          <label><input type="radio" name="patient_type" value="IPD"> IPD</label>
+        </div>
+      </td>
+      <td class="lbl">Dialyzer ใหม่</td>
+      <td>
+        <div class="radio-row">
+          <label><input type="radio" name="new_dialyzer" value="Y"> ใช่</label>
+          <label><input type="radio" name="new_dialyzer" value="N"> ไม่ใช่</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="lbl">HD Mode</td>
+      <td colspan="3">
+        <div class="radio-row">
+          <label><input type="radio" name="hd_mode" value="C"> Chronic</label>
+          <label><input type="radio" name="hd_mode" value="A"> Acute</label>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 6: Hct / ยอดเรียกเก็บ HD ─── -->
+  <div class="section-head">Hct / ยอดเรียกเก็บ HD</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">Hct (%)</td>
+      <td><input type="number" id="epo_hct" step="0.1" min="0" max="100"/></td>
+      <td class="lbl">ยอดเรียกเก็บ HD (บาท)</td>
+      <td><input type="number" id="hd_claim_amount" step="0.01" min="0"/></td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 7: รายการเพิ่มเติม (non-UCS) ─── -->
+  <div class="section-head">รายการพิเศษ (non-UCS)</div>
+  <table class="ft">
+    <tr>
+      <td class="lbl">IV Iron (บาท)</td>
+      <td><input type="number" id="iv_iron" step="0.01" min="0"/></td>
+      <td class="lbl">Low Mol. Heparin (บาท)</td>
+      <td><input type="number" id="low_mol" step="0.01" min="0"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">Double Lumen (บาท)</td>
+      <td><input type="number" id="dbl_lumen" step="0.01" min="0"/></td>
+      <td class="lbl">Parenteral Nutrition (บาท)</td>
+      <td><input type="number" id="par_nutr" step="0.01" min="0"/></td>
+    </tr>
+    <tr>
+      <td class="lbl">Lab/X-ray (บาท)</td>
+      <td><input type="number" id="lab_xray" step="0.01" min="0"/></td>
+      <td class="lbl">Human Albumin (บาท)</td>
+      <td><input type="number" id="human_alb" step="0.01" min="0"/></td>
+    </tr>
+  </table>
+
+  <!-- ─── ส่วนที่ 8: ESA/EPO ─── -->
+  <div class="section-head">ยา ESA/EPO</div>
+  <table class="esa-table">
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th>ชื่อยา ESA/EPO</th>
+        <th style="width:100px">จำนวน (IU/mcg)</th>
+        <th style="width:110px">ยอดเรียกเก็บ (บาท)</th>
+        <th style="width:50px">ลบ</th>
+      </tr>
+    </thead>
+    <tbody id="esa_body"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5" style="padding:4px 6px">
+          <button type="button" class="btn-add" onclick="addEsaRow()">+ เพิ่มรายการ ESA/EPO</button>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- ─── รวม ─── -->
+  <div style="margin-top:10px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div class="total-box">
+      ยอดรวมเรียกเก็บทั้งหมด: <span id="grand_total">0.00</span> บาท
+    </div>
+    <div id="saved-banner" class="saved-banner">✅ บันทึกข้อมูลแล้ว</div>
+  </div>
+
+  <!-- ─── ปุ่มดำเนินการ ─── -->
+  <div class="btn-bar">
+    <button type="button" class="btn btn-new" onclick="resetForm()">เริ่มบันทึกใหม่</button>
+    <button type="button" class="btn btn-primary" onclick="saveRecord()">💾 บันทึกข้อมูล</button>
+  </div>
+
+</div><!-- /form-wrap -->
+
+<script>
+// ── EPO product list (Thai NHSO HD2.6 list) ──────────────────────────────────
+var epoProducts = [
+  { id: 'E0141', name: 'epoetin alfa 2000 iu',      price: 340,  unit: 'IU'  },
+  { id: 'E0142', name: 'epoetin alfa 4000 iu',      price: 625,  unit: 'IU'  },
+  { id: 'E0143', name: 'epoetin alfa 10000 iu',     price: 1500, unit: 'IU'  },
+  { id: 'E0241', name: 'epoetin beta 2000 iu',      price: 340,  unit: 'IU'  },
+  { id: 'E0242', name: 'epoetin beta 4000 iu',      price: 625,  unit: 'IU'  },
+  { id: 'E0243', name: 'epoetin beta 10000 iu',     price: 1500, unit: 'IU'  },
+  { id: 'E0341', name: 'darbepoetin alfa 10 mcg',   price: 800,  unit: 'mcg' },
+  { id: 'E0342', name: 'darbepoetin alfa 20 mcg',   price: 1400, unit: 'mcg' },
+  { id: 'E0343', name: 'darbepoetin alfa 40 mcg',   price: 2600, unit: 'mcg' },
+  { id: 'E0401', name: 'mircera 30 mcg',            price: 1800, unit: 'mcg' },
+  { id: 'E0402', name: 'mircera 50 mcg',            price: 2800, unit: 'mcg' },
+  { id: 'E0403', name: 'mircera 75 mcg',            price: 3900, unit: 'mcg' },
+  { id: 'E0404', name: 'mircera 100 mcg',           price: 5000, unit: 'mcg' },
+  { id: 'X99999', name: 'อื่นๆ',                    price: 0,    unit: ''    },
+];
+
+var esaRowCount = 0;
+
+// ── calcTime: คำนวณเวลารวม start→end ────────────────────────────────────────
+function calcTime() {
+  var sh = parseInt(document.getElementById('start_hh').value || '-1');
+  var sm = parseInt(document.getElementById('start_mm').value || '-1');
+  var eh = parseInt(document.getElementById('end_hh').value || '-1');
+  var em = parseInt(document.getElementById('end_mm').value || '-1');
+  var disp = document.getElementById('total_time_display');
+  var rowRemark = document.getElementById('row_remark');
+  if (sh < 0 || sm < 0 || eh < 0 || em < 0) { if (disp) disp.textContent = '–'; return; }
+  var startMin = sh * 60 + sm;
+  var endMin   = eh * 60 + em;
+  if (endMin < startMin) endMin += 24 * 60; // ข้ามวัน
+  var diffMin = endMin - startMin;
+  var hh = Math.floor(diffMin / 60);
+  var mm = diffMin % 60;
+  if (disp) disp.textContent = hh + ' ชม. ' + mm + ' นาที';
+  if (rowRemark) rowRemark.style.display = (diffMin < 240) ? '' : 'none';
+}
+
+// ── addEsaRow: เพิ่ม row ยา ESA ──────────────────────────────────────────────
+function addEsaRow() {
+  esaRowCount++;
+  var idx = esaRowCount;
+  var tbody = document.getElementById('esa_body');
+  var tr = document.createElement('tr');
+  tr.id = 'esa_row_' + idx;
+  var opts = epoProducts.map(function(p) {
+    return '<option value="' + p.id + '">' + p.name + '</option>';
+  }).join('');
+  tr.innerHTML =
+    '<td style="text-align:center">' + idx + '</td>' +
+    '<td><select id="esa_prod_' + idx + '" onchange="autoEsaClaim(' + idx + ')">' +
+      '<option value="">-- เลือกยา --</option>' + opts +
+    '</select></td>' +
+    '<td><input type="number" id="esa_qty_' + idx + '" min="0" step="1" ' +
+      'oninput="autoEsaClaim(' + idx + ')" style="width:100%"/></td>' +
+    '<td><input type="number" id="esa_claim_' + idx + '" min="0" step="0.01" ' +
+      'oninput="calcTotal()" style="width:100%"/></td>' +
+    '<td style="text-align:center">' +
+      '<button type="button" class="btn-del" onclick="removeEsaRow(' + idx + ')">ลบ</button>' +
+    '</td>';
+  tbody.appendChild(tr);
+}
+
+// ── removeEsaRow ──────────────────────────────────────────────────────────────
+function removeEsaRow(idx) {
+  var tr = document.getElementById('esa_row_' + idx);
+  if (tr) tr.remove();
+  calcTotal();
+}
+
+// ── autoEsaClaim: คำนวณยอดเรียกเก็บ ESA จากยาและจำนวน ─────────────────────
+function autoEsaClaim(idx) {
+  var selEl   = document.getElementById('esa_prod_'  + idx);
+  var qtyEl   = document.getElementById('esa_qty_'   + idx);
+  var claimEl = document.getElementById('esa_claim_' + idx);
+  if (!selEl || !qtyEl || !claimEl) return;
+  var prodId = selEl.value;
+  var qty    = parseFloat(qtyEl.value) || 0;
+  var prod   = epoProducts.find(function(p) { return p.id === prodId; });
+  if (prod && prod.price > 0 && qty > 0) {
+    claimEl.value = (prod.price * qty).toFixed(2);
+  }
+  calcTotal();
+}
+
+// ── calcTotal: รวมยอดทั้งหมด ─────────────────────────────────────────────────
+function calcTotal() {
+  var ids = ['hd_claim_amount','iv_iron','low_mol','dbl_lumen','par_nutr','lab_xray','human_alb'];
+  var total = 0;
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) total += parseFloat(el.value) || 0;
+  });
+  // รวม ESA
+  for (var i = 1; i <= esaRowCount; i++) {
+    var el = document.getElementById('esa_claim_' + i);
+    if (el && document.getElementById('esa_row_' + i)) total += parseFloat(el.value) || 0;
+  }
+  var gt = document.getElementById('grand_total');
+  if (gt) gt.textContent = total.toFixed(2);
+}
+
+// ── resetForm: เริ่มบันทึกใหม่ ─────────────────────────────────────────────
+function resetForm() {
+  // clear inputs
+  document.querySelectorAll('input[type=text],input[type=number],input[type=date]').forEach(function(el) { el.value = ''; });
+  document.querySelectorAll('select').forEach(function(el) { el.value = ''; });
+  document.querySelectorAll('input[type=radio]').forEach(function(el) { el.checked = false; });
+  // clear display boxes
+  ['fullname','dob','age_str','patient_type_display','total_time_display'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = id === 'total_time_display' ? '–' : '';
+  });
+  // clear ESA rows
+  document.getElementById('esa_body').innerHTML = '';
+  esaRowCount = 0;
+  // hide row_remark
+  document.getElementById('row_remark').style.display = 'none';
+  // reset total
+  var gt = document.getElementById('grand_total');
+  if (gt) gt.textContent = '0.00';
+  // hide saved banner
+  document.getElementById('saved-banner').style.display = 'none';
+}
+
+// ── saveRecord: บันทึกข้อมูล ─────────────────────────────────────────────────
+function saveRecord() {
+  calcTotal();
+  document.getElementById('saved-banner').style.display = '';
+  setTimeout(function() {
+    document.getElementById('saved-banner').style.display = 'none';
+  }, 3000);
+}
+
+// ── event listeners ──────────────────────────────────────────────────────────
+document.getElementById('start_hh').addEventListener('change', calcTime);
+document.getElementById('start_mm').addEventListener('change', calcTime);
+document.getElementById('end_hh').addEventListener('change', calcTime);
+document.getElementById('end_mm').addEventListener('change', calcTime);
+
+['hd_claim_amount','iv_iron','low_mol','dbl_lumen','par_nutr','lab_xray','human_alb'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', calcTotal);
+});
+</script>
+</body>
+</html>

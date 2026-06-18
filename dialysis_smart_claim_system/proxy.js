@@ -82,6 +82,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── /hemodialysis_form.html  serve HD form (iframe inside dmis_main.html) ───
+  if (req.url === '/hemodialysis_form.html' || req.url.startsWith('/hemodialysis_form.html?')) {
+    try {
+      const html = fs.readFileSync(path.join(__dirname, '..', 'hemodialysis_form.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } catch(e) {
+      res.writeHead(404); res.end('hemodialysis_form.html not found');
+    }
+    return;
+  }
+
   // ── /get-config  return current db-config (password masked) ─────────────────
   if (req.url === '/get-config') {
     const cfg = loadDbConfig() || {};
