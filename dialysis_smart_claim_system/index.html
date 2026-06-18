@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
@@ -1483,15 +1483,8 @@ const QUEUE_COLS = [
   ['humanalb',          'humanalb',     72,  r=>`<span style="${_nr}">${fmtN(r.humanalb)}</span>`],
 ];
 
-// Fields ที่ต้องกรอกก่อนส่งเคลม DMIS — แสดงแถบแดงถ้าว่าง
-const REQUIRED_CLAIM_FIELDS = new Set([
-  'pid', 'hn', 'ptname',
-  'hd_sdate_date', 'start_hh', 'end_hh',
-  'pre_weight', 'post_weight',
-  'pre_bps', 'pre_bpd', 'post_bps', 'post_bpd',
-  'hd_claim',
-]);
-
+// คอลัมน์ระบบที่ไม่ต้องแสดงแถบแดง
+const NO_EMPTY_CHECK = new Set(['id', 'claim_status']);
 function isEmptyVal(v) { return v == null || v === '' || String(v).trim() === ''; }
 
 function queueGridCols() {
@@ -1547,7 +1540,7 @@ function renderQueue(rows) {
       html += `<div class="queue-cell" data-row-vn="${vs}" style="${cs}display:flex;align-items:center;justify-content:center;"><input type="checkbox" data-vn="${vs}" ${isSelected?'checked':''} onchange="toggleSelectRow('${vs}',this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563a8;"></div>`;
     }
     html += QUEUE_COLS.map(c => {
-      const needFlag = !isSent && REQUIRED_CLAIM_FIELDS.has(c[0]) && isEmptyVal(r[c[0]]);
+      const needFlag = !isSent && !NO_EMPTY_CHECK.has(c[0]) && isEmptyVal(r[c[0]]);
       const cellStyle = needFlag
         ? `${cs}background:#fee2e2;border-left:3px solid #ef4444;`
         : cs;
