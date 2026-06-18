@@ -346,11 +346,32 @@
 
       <!-- ============ LOGS ============ -->
       <div id="screen-logs" class="screen">
-        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
-          <div style="display:grid;grid-template-columns:150px 130px 1.5fr 1fr 120px;gap:10px;padding:13px 20px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:12px;font-weight:600;color:#6b7a8d;">
-            <div>เวลา</div><div>ผู้ดำเนินการ</div><div>การดำเนินการ</div><div>รายการ</div><div>ผล</div>
+        <!-- filter bar -->
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:14px 20px;margin-bottom:14px;">
+          <!-- preset buttons -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;color:#33465c;align-self:center;margin-right:4px;">ช่วงเวลา</span>
+            <button id="log-preset-month"   onclick="setLogPreset('month')"   style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#eef3fb;color:#2563a8;font-weight:600;">เดือนนี้</button>
+            <button id="log-preset-quarter" onclick="setLogPreset('quarter')" style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ไตรมาสนี้</button>
+            <button id="log-preset-year"    onclick="setLogPreset('year')"    style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ปีนี้</button>
+            <button id="log-preset-custom"  onclick="setLogPreset('custom')"  style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">กำหนดเอง</button>
           </div>
-          <div id="log-table"></div>
+          <!-- date inputs (hidden when preset selected, shown when custom) -->
+          <div id="log-custom-range" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="date" id="log-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:5px 10px;font-size:13px;color:#1c2e44;">
+            <span style="color:#8b99a9;font-size:13px;">ถึง</span>
+            <input type="date" id="log-date-to"   style="border:1px solid #d0d9e4;border-radius:8px;padding:5px 10px;font-size:13px;color:#1c2e44;">
+            <button onclick="loadLogs()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:6px 18px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
+          </div>
+          <div id="log-range-label" style="font-size:12.5px;color:#8b99a9;margin-top:2px;"></div>
+          <span id="log-count" style="font-size:12.5px;color:#8b99a9;display:block;margin-top:4px;"></span>
+        </div>
+        <!-- table -->
+        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:160px 140px 1.6fr 1.2fr 110px;gap:10px;padding:13px 20px;background:#f5f8fb;border-bottom:1px solid #e4e9f0;font-size:12px;font-weight:600;color:#6b7a8d;">
+            <div>เวลาส่งเบิก</div><div>ผู้ดำเนินการ</div><div>HN / ชื่อ-สกุล</div><div>วันรับบริการ</div><div>ผล</div>
+          </div>
+          <div id="log-table"><div style="padding:40px;text-align:center;color:#b0bac5;font-size:14px;">เลือกช่วงวันที่แล้วกด ค้นหา</div></div>
         </div>
       </div>
 
@@ -494,16 +515,6 @@ const ERRORS = [
   {hn:'00118720',name:'นายมานพ ศรีสุข',reason:'สิทธิไม่ตรงกับฐานข้อมูล สปสช.',code:'ERR-ELIG-11',date:'13/06/69',sev:'#cf3b3b',tag:'สิทธิ',tagColor:'#8a2a2a',tagBg:'#fbe9e9'},
   {hn:'00131207',name:'นางสาวกานดา แก้วใส',reason:'ซ้ำซ้อนกับการเบิกครั้งก่อนหน้า',code:'ERR-DUP-03',date:'13/06/69',sev:'#d99b1c',tag:'ซ้ำซ้อน',tagColor:'#92651a',tagBg:'#fbf1de'},
 ];
-const LOGS = [
-  {time:'14/06 12:48:21',actor:'ระบบ',actorTone:'#2563a8',action:'ส่งเบิกอัตโนมัติเข้า DMIS & HD',target:'HN 00125634',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-  {time:'14/06 12:41:09',actor:'ระบบ',actorTone:'#2563a8',action:'ดึงข้อมูล 40 ฟิลด์จาก HIS',target:'HN 00118720',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-  {time:'14/06 12:30:55',actor:'ระบบ',actorTone:'#cf3b3b',action:'ตรวจเกณฑ์ — URR ต่ำกว่าเกณฑ์',target:'HN 00120945',result:'Reject',resColor:'#cf3b3b',resBg:'#fbe9e9'},
-  {time:'14/06 12:15:02',actor:'รสริน',actorTone:'#f0871f',action:'ยืนยันรายการ ESA/EPO ก่อนส่ง',target:'HN 00114562',result:'ยืนยัน',resColor:'#c9821a',resBg:'#fbf1de'},
-  {time:'14/06 12:02:48',actor:'ระบบ',actorTone:'#2563a8',action:'ซิงก์รายการใหม่จาก HIS (18 ราย)',target:'Batch #2240',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-  {time:'14/06 11:48:30',actor:'ระบบ',actorTone:'#2563a8',action:'ส่งเบิกอัตโนมัติเข้า DMIS & HD',target:'HN 00109833',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-  {time:'14/06 11:30:14',actor:'รสริน',actorTone:'#f0871f',action:'แก้ไขสิทธิและส่งใหม่',target:'HN 00131207',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-  {time:'14/06 09:00:00',actor:'ระบบ',actorTone:'#2563a8',action:'เริ่มรอบประมวลผลอัตโนมัติประจำวัน',target:'Batch #2238',result:'สำเร็จ',resColor:'#1a8a5a',resBg:'#e6f4ec'},
-];
 const RULES = [
   {label:'ตรวจสอบสิทธิกับฐานข้อมูล สปสช. ก่อนส่ง',on:true},
   {label:'ต้องมีเลขอนุมัติ HD ที่ยังไม่หมดอายุ',on:true},
@@ -571,6 +582,7 @@ function navigate(screen) {
   // re-render display page every time to ensure theme cards are visible
   if (screen === 'display') renderDisplay();
   if (screen === 'queue') initQueueScreen();
+  if (screen === 'logs') setLogPreset(_logPreset || 'month');
   // ถ้า screen อยู่ใต้ parent ที่มี submenu ให้ expand submenu นั้นอัตโนมัติ
   const pKey = getParentKey(screen);
   if (pKey) {
@@ -1609,16 +1621,119 @@ function renderErrors() {
   `).join('');
 }
 
-function renderLogs() {
-  document.getElementById('log-table').innerHTML = LOGS.map(l => `
-    <div style="display:grid;grid-template-columns:150px 130px 1.5fr 1fr 120px;gap:10px;padding:13px 20px;border-bottom:1px solid #eef1f5;align-items:center;font-size:13px;">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${l.time}</div>
-      <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:${l.actorTone};flex:0 0 auto;"></span><span style="color:#33465c;">${l.actor}</span></div>
-      <div style="color:#1c2e44;">${l.action}</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${l.target}</div>
-      <div><span style="background:${l.resBg};color:${l.resColor};font-size:12px;font-weight:600;border-radius:7px;padding:3px 11px;">${l.result}</span></div>
-    </div>
-  `).join('');
+let _logPreset = 'month';
+
+function setLogPreset(preset) {
+  _logPreset = preset;
+  const btns = ['month','quarter','year','custom'];
+  btns.forEach(k => {
+    const b = document.getElementById('log-preset-' + k);
+    if (!b) return;
+    const active = k === preset;
+    b.style.background = active ? '#eef3fb' : '#fff';
+    b.style.color       = active ? '#2563a8' : '#33465c';
+    b.style.fontWeight  = active ? '600' : '400';
+    b.style.borderColor = active ? '#2563a8' : '#d0d9e4';
+  });
+  const customDiv = document.getElementById('log-custom-range');
+  if (customDiv) customDiv.style.display = preset === 'custom' ? 'flex' : 'none';
+  if (preset !== 'custom') loadLogs();
+}
+
+function getLogDateRange() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if (_logPreset === 'month') {
+    return { from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), to: fmt(now) };
+  }
+  if (_logPreset === 'quarter') {
+    const q = Math.floor(now.getMonth() / 3);
+    return { from: fmt(new Date(now.getFullYear(), q * 3, 1)), to: fmt(now) };
+  }
+  if (_logPreset === 'year') {
+    return { from: fmt(new Date(now.getFullYear(), 0, 1)), to: fmt(now) };
+  }
+  // custom
+  const fromEl = document.getElementById('log-date-from');
+  const toEl   = document.getElementById('log-date-to');
+  const todayStr = fmt(now);
+  if (fromEl && !fromEl.value) fromEl.value = todayStr;
+  if (toEl   && !toEl.value)   toEl.value   = todayStr;
+  return { from: fromEl?.value || todayStr, to: toEl?.value || todayStr };
+}
+
+function updateLogRangeLabel(from, to) {
+  const el = document.getElementById('log-range-label');
+  if (!el) return;
+  const thMap = { month:'เดือนนี้', quarter:'ไตรมาสนี้', year:'ปีนี้', custom:'กำหนดเอง' };
+  const fmtTh = s => {
+    const [y,m,d] = s.split('-');
+    const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return `${parseInt(d)} ${months[parseInt(m)-1]} ${parseInt(y)+543}`;
+  };
+  el.textContent = `${thMap[_logPreset]}: ${fmtTh(from)} – ${fmtTh(to)}`;
+}
+
+async function loadLogs() {
+  const { from, to } = getLogDateRange();
+  updateLogRangeLabel(from, to);
+
+  const el = document.getElementById('log-table');
+  el.innerHTML = `<div style="padding:40px;text-align:center;color:#8b99a9;font-size:14px;">กำลังโหลดประวัติ...</div>`;
+  document.getElementById('log-count').textContent = '';
+
+  if (!APP.apiUrl) {
+    el.innerHTML = `<div style="padding:40px;text-align:center;color:#cf3b3b;font-size:14px;">ยังไม่ได้เชื่อมต่อฐานข้อมูล</div>`;
+    return;
+  }
+
+  try {
+    const sql = `
+      SELECT
+        c.vn,
+        IFNULL(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/%y %H:%i'),'—') AS sent_time,
+        IFNULL(c.clinic_hd_claim_sent_by,'ระบบ') AS sent_by,
+        v.hn,
+        v.vstdate,
+        DATE_FORMAT(v.vstdate,'%d/%m/%y') AS vstdate_fmt,
+        CONCAT(IFNULL(p.pname,''),IFNULL(p.fname,''),' ',IFNULL(p.lname,'')) AS ptname
+      FROM clinic_hd_claim c
+      INNER JOIN ovst v ON v.vn = c.vn
+      INNER JOIN patient p ON p.hn = v.hn
+      WHERE c.claim_status = 'sent'
+        AND v.vstdate BETWEEN '${from}' AND '${to}'
+      ORDER BY c.clinic_hd_claim_sent_at DESC, v.vstdate DESC
+      LIMIT 500`;
+    const rows = await executeSqlViaApi(sql);
+    renderLogs(rows || []);
+  } catch(e) {
+    el.innerHTML = `<div style="padding:40px;text-align:center;color:#cf3b3b;font-size:14px;">โหลดข้อมูลไม่สำเร็จ: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderLogs(rows) {
+  const el = document.getElementById('log-table');
+  const cnt = document.getElementById('log-count');
+  if (!rows.length) {
+    el.innerHTML = `<div style="padding:50px;text-align:center;color:#8b99a9;font-size:14px;">ไม่มีประวัติการส่งเบิกในช่วงวันที่นี้</div>`;
+    if (cnt) cnt.textContent = '';
+    return;
+  }
+  if (cnt) cnt.textContent = `พบ ${rows.length.toLocaleString()} รายการ`;
+  const gcols = '160px 140px 1.6fr 1.2fr 110px';
+  el.innerHTML = rows.map(l => {
+    const actor = (l.sent_by || 'ระบบ').trim();
+    const actorTone = actor === 'ระบบ' ? '#2563a8' : '#f0871f';
+    const name = (l.ptname || '').trim();
+    return `<div style="display:grid;grid-template-columns:${gcols};gap:10px;padding:12px 20px;border-bottom:1px solid #eef1f5;align-items:center;font-size:13px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${escHtml(l.sent_time)}</div>
+      <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:${actorTone};flex:0 0 auto;"></span><span style="color:#33465c;">${escHtml(actor)}</span></div>
+      <div style="color:#1c2e44;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(name)}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">HN ${escHtml(l.hn||'')}</span>&nbsp;&nbsp;${escHtml(name)}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55677d;">${escHtml(l.vstdate_fmt||'')}</div>
+      <div><span style="background:#e6f4ec;color:#1a8a5a;font-size:12px;font-weight:600;border-radius:7px;padding:3px 11px;">ส่งสำเร็จ</span></div>
+    </div>`;
+  }).join('');
 }
 
 function renderSettings() {
@@ -2073,7 +2188,6 @@ function initApp() {
   renderQueue();
   renderDetail();
   renderErrors();
-  renderLogs();
   renderSettings();
   renderDisplay();
   navigate('dashboard');
