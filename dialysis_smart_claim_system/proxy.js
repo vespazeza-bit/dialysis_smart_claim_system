@@ -355,7 +355,7 @@ a:hover{background:#005fa3;}</style></head><body>
     try {
       const [[sRows], [rRows], [tRows]] = await Promise.all([
         // stats: base = clinic_hd_claim, date filter via ovst.vstdate
-        p.query(`SELECT COUNT(*) AS total, SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending, IFNULL(SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN IFNULL(c.hd_claim,0) ELSE 0 END),0) AS total_amount FROM clinic_hd_claim c INNER JOIN ovst v ON v.vn=c.vn WHERE v.vstdate BETWEEN ${sqlEsc(from)} AND ${sqlEsc(to)}`),
+        p.query(`SELECT COUNT(*) AS total, SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending, IFNULL(SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN IFNULL(c.clinic_hd_claim_amount,0) ELSE 0 END),0) AS total_amount FROM clinic_hd_claim c INNER JOIN ovst v ON v.vn=c.vn WHERE v.vstdate BETWEEN ${sqlEsc(from)} AND ${sqlEsc(to)}`),
         // rights breakdown: base = clinic_hd_claim
         p.query(`SELECT pt.pttype AS code, pt.name AS pttype_name, COUNT(DISTINCT c.vn) AS total, SUM(CASE WHEN IFNULL(c.claim_status,'')='sent' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN IFNULL(c.claim_status,'')!='sent' THEN 1 ELSE 0 END) AS pending FROM clinic_hd_claim c INNER JOIN ovst v ON v.vn=c.vn LEFT JOIN visit_pttype vp ON vp.vn=c.vn LEFT JOIN pttype pt ON pt.pttype=vp.pttype WHERE v.vstdate BETWEEN ${sqlEsc(from)} AND ${sqlEsc(to)} GROUP BY pt.pttype,pt.name ORDER BY total DESC`),
         // today summary: base = clinic_hd_claim, CURDATE
