@@ -231,7 +231,7 @@
           </div>
           <span id="db-range-label" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
         </div>
-        <div id="stat-cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px;"></div>
+        <div id="stat-cards" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;"></div>
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:22px 24px;margin-bottom:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
             <div style="font-size:16px;font-weight:700;color:#0d2742;">ขั้นตอนการคีย์เบิกอัตโนมัติ</div>
@@ -741,7 +741,7 @@ async function loadDashboard() {
 
   // placeholder while loading
   const skelCard = `<div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:18px;"><div style="height:4px;width:38px;border-radius:4px;background:#e4e9f0;margin-bottom:13px;"></div><div style="height:12px;width:70%;background:#f1f4f8;border-radius:4px;margin-bottom:10px;"></div><div style="height:32px;width:50%;background:#edf1f6;border-radius:4px;"></div></div>`;
-  document.getElementById('stat-cards').innerHTML = skelCard.repeat(6);
+  document.getElementById('stat-cards').innerHTML = skelCard.repeat(5);
   document.getElementById('activity-list').innerHTML = '<div style="padding:20px;text-align:center;color:#b0bac5;font-size:13px;">กำลังโหลด...</div>';
   document.getElementById('today-summary').innerHTML = '<div style="padding:16px;text-align:center;color:#b0bac5;font-size:13px;">กำลังโหลด...</div>';
 
@@ -773,12 +773,11 @@ function renderDashStat(d, from, to) {
   const fmtTh = s => { const [y,m,d2] = s.split('-'); return `${parseInt(d2)} ${months[parseInt(m)-1]} ${parseInt(y)+543}`; };
   const sub = from === to ? fmtTh(from) : `${fmtTh(from)} – ${fmtTh(to)}`;
   const cards = [
-    {label:'รอส่ง',              value: d ? ready.toLocaleString()      : '—', sub, tone:'#2563a8'},
-    {label:'วรตรวจสอบข้อมูล',   value: d ? unreviewed.toLocaleString() : '—', sub, tone:'#c9821a'},
-    {label:'กำลังส่ง',           value: '0',                                    sub:'real-time',    tone:'#f0871f'},
-    {label:'ส่งสำเร็จ',          value: d ? sent.toLocaleString()       : '—', sub, tone:'#1a8a5a'},
-    {label:'ส่งไม่สำเร็จ',       value: '0',                                    sub:'ยังไม่มีข้อมูล', tone:'#cf3b3b'},
-    {label:'ขั้นตอนแล้ว',        value: d ? autoSent.toLocaleString()   : '—', sub, tone:'#7c3aed'},
+    {label:'รอส่ง',               value: d ? ready.toLocaleString()      : '—', sub, tone:'#2563a8'},
+    {label:'รอตรวจสอบข้อมูล',    value: d ? unreviewed.toLocaleString() : '—', sub, tone:'#c9821a'},
+    {label:'กำลังส่ง',            value: '0',                                    sub:'real-time',      tone:'#f0871f'},
+    {label:'ส่งสำเร็จ',           value: d ? sent.toLocaleString()       : '—', sub, tone:'#1a8a5a'},
+    {label:'ส่งไม่สำเร็จ',        value: '0',                                    sub:'ยังไม่มีข้อมูล', tone:'#cf3b3b'},
   ];
   document.getElementById('stat-cards').innerHTML = cards.map(s => `
     <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:16px 16px 14px;">
