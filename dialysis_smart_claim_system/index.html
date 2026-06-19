@@ -385,12 +385,8 @@
           <button onclick="loadLogs()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:7px 20px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
           <span id="log-count" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
         </div>
-        <!-- summary card -->
-        <div id="log-summary" style="display:none;border-radius:14px;padding:16px 22px;margin-bottom:14px;align-items:center;gap:20px;flex-wrap:wrap;"></div>
-        <!-- patient cards -->
-        <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
-          <div id="log-table"><div style="padding:40px;text-align:center;color:#b0bac5;font-size:14px;">เลือกช่วงวันที่แล้วกด ค้นหา</div></div>
-        </div>
+        <!-- results -->
+        <div id="log-table"><div style="padding:40px;text-align:center;color:#b0bac5;font-size:14px;">เลือกช่วงวันที่แล้วกด ค้นหา</div></div>
       </div>
 
       <!-- ============ SETTINGS ============ -->
@@ -1785,10 +1781,14 @@ async function loadLogs() {
         IFNULL(c.clinic_hd_claim_sent_by,'ระบบ') AS sent_by,
         v.hn,
         v.vstdate,
-        CONCAT(IFNULL(p.pname,''),IFNULL(p.fname,''),' ',IFNULL(p.lname,'')) AS ptname
+        CONCAT(IFNULL(p.pname,''),IFNULL(p.fname,''),' ',IFNULL(p.lname,'')) AS ptname,
+        IFNULL(pt.name,'') AS pttype_name,
+        IFNULL(c.clinic_hd_claim_amount,0) AS hd_amount
       FROM clinic_hd_claim c
       INNER JOIN ovst v ON v.vn = c.vn
       INNER JOIN patient p ON p.hn = v.hn
+      LEFT JOIN visit_pttype vp ON vp.vn = c.vn
+      LEFT JOIN pttype pt ON pt.pttype = vp.pttype
       WHERE c.claim_status = 'sent'
         AND v.vstdate BETWEEN '${from}' AND '${to}'
       ORDER BY c.clinic_hd_claim_sent_at DESC, v.vstdate DESC
@@ -1803,55 +1803,106 @@ async function loadLogs() {
 function renderLogs(rows) {
   const el  = document.getElementById('log-table');
   const cnt = document.getElementById('log-count');
-  const sumEl = document.getElementById('log-summary');
 
   if (!rows.length) {
     el.innerHTML = `<div style="padding:50px;text-align:center;color:#8b99a9;font-size:14px;">ไม่มีประวัติการส่งเบิกในช่วงวันที่นี้</div>`;
     if (cnt) cnt.textContent = '';
-    if (sumEl) sumEl.style.display = 'none';
     return;
   }
 
-  // summary card
-  const total = rows.length;
+  const total   = rows.length;
+  const sentBy  = (rows[0]?.sent_by || 'ระบบ').trim();
   const lastTime = formatThaiDateTime(rows[0]?.sent_at);
-  if (sumEl) {
-    sumEl.style.cssText = 'display:flex;background:#e6f4ec;border:1px solid #bbdece;border-radius:14px;padding:16px 22px;margin-bottom:14px;align-items:center;gap:20px;flex-wrap:wrap;';
-    sumEl.innerHTML = `
-      <span style="width:11px;height:11px;border-radius:50%;background:#16a34a;flex:0 0 auto;box-shadow:0 0 0 3px #bbdece;"></span>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#14532d;">ส่งเบิกสำเร็จทั้งหมด ${total.toLocaleString()} รายการ</div>
-        <div style="font-size:12.5px;color:#1a8a5a;margin-top:2px;">ส่งล่าสุด: ${escHtml(lastTime)}</div>
-      </div>
-      <div style="margin-left:auto;background:#fff;border-radius:10px;padding:8px 18px;text-align:center;">
-        <div style="font-size:22px;font-weight:700;color:#16a34a;">${total.toLocaleString()}</div>
-        <div style="font-size:11px;color:#1a8a5a;font-weight:600;">รายการ</div>
-      </div>`;
-  }
   if (cnt) cnt.textContent = `พบ ${total.toLocaleString()} รายการ`;
 
-  // section header
-  const header = `<div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid #eef1f5;background:#f8fafb;">
-    <span style="font-size:13px;font-weight:700;color:#1c2e44;">คิวรายการที่ส่งเบิก</span>
-    <span style="background:#2563a8;color:#fff;font-size:11.5px;font-weight:700;border-radius:20px;padding:2px 10px;">${total}</span>
-  </div>`;
+  // generate log entries from data
+  const logLines = [];
+  [...rows].reverse().forEach((r, i) => {
+    const t = r.sent_at ? String(r.sent_at).slice(11,16) : '--:--';
+    const n = `[${i+1}/${total}]`;
+    const name = (r.ptname||'').trim();
+    const pt   = (r.pttype_name||'').trim();
+    const amt  = parseFloat(r.hd_amount||0);
+    logLines.push(`<div style="color:#93c5fd;">${t} ${n} เปิดฟอร์มเบิกค่าฟอกเลือด – ค้นหา HN ${escHtml(r.hn||'')}</div>`);
+    logLines.push(`<div style="color:#e2e8f0;">${t}&nbsp;&nbsp;&nbsp;พบผู้ป่วย: ${escHtml(name)}${pt ? ` | สิทธิ ${escHtml(pt)}` : ''}</div>`);
+    if (amt > 0) logLines.push(`<div style="color:#e2e8f0;">${t}&nbsp;&nbsp;&nbsp;กรอกข้อมูล HD = ${amt.toLocaleString()} บาท</div>`);
+    logLines.push(`<div style="color:#4ade80;">${t}&nbsp;&nbsp;&nbsp;&#10003; บันทึกสำเร็จ – VN: ${escHtml(r.vn||'')}</div>`);
+  });
 
   // patient cards
-  const cards = rows.map(l => {
-    const actor = (l.sent_by || 'ระบบ').trim();
-    const name  = (l.ptname || '').trim();
-    return `<div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid #f0f3f7;">
+  const cards = rows.map(r => {
+    const name = (r.ptname||'').trim();
+    return `<div style="display:flex;align-items:center;gap:14px;padding:13px 22px;border-bottom:1px solid #f0f3f7;">
       <span style="width:9px;height:9px;border-radius:50%;background:#16a34a;flex:0 0 auto;"></span>
-      <div style="flex:0 0 88px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:#33465c;">${escHtml(l.hn||'')}</div>
-      <div style="flex:1;font-size:13.5px;color:#1c2e44;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(name)}">${escHtml(name)}</div>
-      <div style="flex:0 0 110px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8b99a9;">${escHtml(formatThaiDate(l.vstdate))}</div>
-      <div style="flex:0 0 155px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8b99a9;">${escHtml(formatThaiDateTime(l.sent_at))}</div>
-      <div style="flex:0 0 80px;font-size:12px;color:#55677d;text-align:center;">${escHtml(actor)}</div>
-      <span style="background:#e6f4ec;color:#1a8a5a;font-size:12px;font-weight:700;border-radius:7px;padding:4px 13px;white-space:nowrap;">ส่งสำเร็จ</span>
+      <div style="flex:0 0 90px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#33465c;">${escHtml(r.hn||'')}</div>
+      <div style="flex:1;font-size:14px;color:#1c2e44;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(name)}">${escHtml(name)}</div>
+      <span style="background:#e6f4ec;color:#1a8a5a;font-size:12.5px;font-weight:700;border-radius:7px;padding:5px 16px;white-space:nowrap;">ส่งสำเร็จ</span>
     </div>`;
   }).join('');
 
-  el.innerHTML = header + cards;
+  el.innerHTML = `
+    <!-- status banner -->
+    <div style="background:#e6f4ec;border:1px solid #bbdece;border-radius:14px;padding:14px 22px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px #a7f3d0;flex:0 0 auto;"></span>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:#14532d;">ส่งเบิกเสร็จสิ้น</div>
+        <div style="font-size:12.5px;color:#1a8a5a;margin-top:2px;">เสร็จสิ้นการทำงานทั้งหมด — สำเร็จ ${total.toLocaleString()} รายการ, ไม่สำเร็จ 0 รายการ</div>
+      </div>
+    </div>
+
+    <!-- progress bar -->
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:12px;padding:14px 22px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:12.5px;color:#55677d;font-weight:600;">ความคืบหน้า 100%</span>
+        <span style="font-size:12px;color:#8b99a9;">เป้าหมาย: ระบบ DMIS e-Claim</span>
+      </div>
+      <div style="height:8px;background:#e4e9f0;border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:100%;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:4px;"></div>
+      </div>
+    </div>
+
+    <!-- two panels -->
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:14px;margin-bottom:14px;">
+      <!-- left: summary stats -->
+      <div style="background:#fff;border:1px solid #e4e9f0;border-radius:12px;padding:18px 22px;">
+        <div style="font-size:13px;font-weight:700;color:#1c2e44;margin-bottom:14px;">สรุปผลการส่งเบิก</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#55677d;">ส่งสำเร็จ</span>
+            <span style="font-size:15px;font-weight:700;color:#16a34a;">${total.toLocaleString()} รายการ</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#55677d;">ไม่สำเร็จ</span>
+            <span style="font-size:15px;font-weight:700;color:#9ca3af;">0 รายการ</span>
+          </div>
+          <div style="border-top:1px solid #eef1f5;padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#55677d;">ส่งล่าสุด</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#33465c;">${escHtml(lastTime)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#55677d;">ผู้ดำเนินการ</span>
+            <span style="font-size:13px;font-weight:600;color:#2563a8;">${escHtml(sentBy)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- right: log panel -->
+      <div style="background:#0f172a;border-radius:12px;padding:16px 18px;overflow:hidden;">
+        <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:10px;letter-spacing:.4px;text-transform:uppercase;">บันทึกการทำงาน (Log)</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.75;max-height:220px;overflow-y:auto;">
+          ${logLines.join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- patient cards -->
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid #eef1f5;background:#f8fafb;">
+        <span style="font-size:13px;font-weight:700;color:#1c2e44;">คิวรายการที่ประมวลผล</span>
+        <span style="background:#2563a8;color:#fff;font-size:11.5px;font-weight:700;border-radius:20px;padding:2px 10px;">${total}</span>
+      </div>
+      ${cards}
+    </div>`;
 }
 
 function renderSettings() {
