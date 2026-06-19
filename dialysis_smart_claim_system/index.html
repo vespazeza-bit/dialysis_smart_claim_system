@@ -231,7 +231,7 @@
           </div>
           <span id="db-range-label" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
         </div>
-        <div id="stat-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;"></div>
+        <div id="stat-cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px;"></div>
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:22px 24px;margin-bottom:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
             <div style="font-size:16px;font-weight:700;color:#0d2742;">ขั้นตอนการคีย์เบิกอัตโนมัติ</div>
@@ -741,7 +741,7 @@ async function loadDashboard() {
 
   // placeholder while loading
   const skelCard = `<div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:18px;"><div style="height:4px;width:38px;border-radius:4px;background:#e4e9f0;margin-bottom:13px;"></div><div style="height:12px;width:70%;background:#f1f4f8;border-radius:4px;margin-bottom:10px;"></div><div style="height:32px;width:50%;background:#edf1f6;border-radius:4px;"></div></div>`;
-  document.getElementById('stat-cards').innerHTML = skelCard.repeat(4);
+  document.getElementById('stat-cards').innerHTML = skelCard.repeat(6);
   document.getElementById('activity-list').innerHTML = '<div style="padding:20px;text-align:center;color:#b0bac5;font-size:13px;">กำลังโหลด...</div>';
   document.getElementById('today-summary').innerHTML = '<div style="padding:16px;text-align:center;color:#b0bac5;font-size:13px;">กำลังโหลด...</div>';
 
@@ -762,25 +762,30 @@ async function loadDashboard() {
 }
 
 function renderDashStat(d, from, to) {
-  const pending = d ? (parseInt(d.pending)||0) : 0;
-  const sent    = d ? (parseInt(d.sent)||0) : 0;
-  const amount  = d ? parseFloat(d.total_amount||0) : 0;
+  const pending    = d ? (parseInt(d.pending)||0)    : 0;
+  const sent       = d ? (parseInt(d.sent)||0)       : 0;
+  const ready      = d ? (parseInt(d.ready)||0)      : 0;
+  const unreviewed = d ? (parseInt(d.unreviewed)||0) : 0;
+  const autoSent   = d ? (parseInt(d.auto_sent)||0)  : 0;
+  const amount     = d ? parseFloat(d.total_amount||0) : 0;
   const fmtAmt  = v => v >= 1000000 ? `฿${(v/1000000).toFixed(2)}M` : v >= 1000 ? `฿${(v/1000).toFixed(1)}K` : `฿${v.toFixed(0)}`;
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const fmtTh = s => { const [y,m,d2] = s.split('-'); return `${parseInt(d2)} ${months[parseInt(m)-1]} ${parseInt(y)+543}`; };
   const sub = from === to ? fmtTh(from) : `${fmtTh(from)} – ${fmtTh(to)}`;
   const cards = [
-    {label:'รอเบิก (Pending)',  value: d ? pending.toLocaleString() : '—', sub, tone:'#2563a8'},
-    {label:'ส่งสำเร็จแล้ว',    value: d ? sent.toLocaleString() : '—',    sub, tone:'#1a8a5a'},
-    {label:'ติด Reject',        value: '0',                                 sub:'ยังไม่มีข้อมูล', tone:'#cf3b3b'},
-    {label:'ยอดเบิกรวม',       value: d ? fmtAmt(amount) : '—',           sub, tone:'#c9821a'},
+    {label:'รอส่ง',              value: d ? ready.toLocaleString()      : '—', sub, tone:'#2563a8'},
+    {label:'วรตรวจสอบข้อมูล',   value: d ? unreviewed.toLocaleString() : '—', sub, tone:'#c9821a'},
+    {label:'กำลังส่ง',           value: '0',                                    sub:'real-time',    tone:'#f0871f'},
+    {label:'ส่งสำเร็จ',          value: d ? sent.toLocaleString()       : '—', sub, tone:'#1a8a5a'},
+    {label:'ส่งไม่สำเร็จ',       value: '0',                                    sub:'ยังไม่มีข้อมูล', tone:'#cf3b3b'},
+    {label:'ขั้นตอนแล้ว',        value: d ? autoSent.toLocaleString()   : '—', sub, tone:'#7c3aed'},
   ];
   document.getElementById('stat-cards').innerHTML = cards.map(s => `
-    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:18px 18px 16px;">
-      <div style="height:4px;border-radius:4px;width:38px;margin-bottom:13px;background:${s.tone};"></div>
-      <div style="font-size:13px;color:#6b7a8d;font-weight:500;margin-bottom:6px;">${s.label}</div>
-      <div style="font-size:32px;font-weight:700;color:#0d2742;line-height:1;letter-spacing:-.5px;">${s.value}</div>
-      <div style="font-size:12px;color:#8b99a9;margin-top:7px;">${s.sub}</div>
+    <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:16px 16px 14px;">
+      <div style="height:4px;border-radius:4px;width:38px;margin-bottom:12px;background:${s.tone};"></div>
+      <div style="font-size:12px;color:#6b7a8d;font-weight:500;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</div>
+      <div style="font-size:28px;font-weight:700;color:#0d2742;line-height:1;letter-spacing:-.5px;">${s.value}</div>
+      <div style="font-size:11.5px;color:#8b99a9;margin-top:6px;">${s.sub}</div>
     </div>
   `).join('');
 }
@@ -822,27 +827,71 @@ function renderDashToday(d) {
   const sent       = d ? (parseInt(d.sent)||0)        : 0;
   const ready      = d ? (parseInt(d.ready)||0)       : 0;
   const unreviewed = d ? (parseInt(d.unreviewed)||0)  : 0;
-  if (!total) {
-    document.getElementById('today-summary').innerHTML = '<div style="padding:16px;text-align:center;color:#b0bac5;font-size:13px;">ยังไม่มีรายการวันนี้</div>';
-    return;
-  }
+  const amount     = d ? parseFloat(d.total_amount_today||0) : 0;
+  const fmtAmt = v => v.toLocaleString('th-TH', {minimumFractionDigits:0, maximumFractionDigits:0});
+
   const bar = (val, tot, tone) => {
     const pct = tot > 0 ? Math.round(val/tot*100) : 0;
     return `<div style="height:7px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="height:100%;border-radius:5px;width:${pct}%;background:${tone};"></div></div>`;
   };
+
+  // donut chart
+  const pct     = total > 0 ? Math.round(sent/total*100) : 0;
+  const r       = 32, circ = 2 * Math.PI * r;
+  const dash    = circ * pct / 100;
+  const donut   = `<svg width="90" height="90" viewBox="0 0 90 90">
+    <circle cx="45" cy="45" r="${r}" fill="none" stroke="#eef1f5" stroke-width="10"/>
+    <circle cx="45" cy="45" r="${r}" fill="none" stroke="#1a8a5a" stroke-width="10"
+      stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"
+      transform="rotate(-90 45 45)"/>
+    <text x="45" y="49" text-anchor="middle" font-size="15" font-weight="700" fill="#0d2742">${pct}%</text>
+    <text x="45" y="61" text-anchor="middle" font-size="9" fill="#8b99a9">สำเร็จ</text>
+  </svg>`;
+
+  if (!total) {
+    document.getElementById('today-summary').innerHTML = `
+      <div style="padding:16px;text-align:center;color:#b0bac5;font-size:13px;">ยังไม่มีรายการวันนี้</div>
+      <div style="border-top:1px solid #eef1f5;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:600;color:#6b7a8d;margin-bottom:10px;">อัตราการส่งสำเร็จ</div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          ${donut}
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#1a8a5a;"></span><span style="font-size:12px;color:#54657a;">ส่งสำเร็จ <b>0</b></span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#cf3b3b;"></span><span style="font-size:12px;color:#54657a;">ไม่สำเร็จ <b>0</b></span></div>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
   document.getElementById('today-summary').innerHTML = [
-    {label:'ส่งสำเร็จแล้ว',     val:sent,       tone:'#1a8a5a'},
-    {label:'ยืนยันพร้อมส่ง',    val:ready,      tone:'#c9821a'},
-    {label:'ยังไม่ยืนยัน',      val:unreviewed, tone:'#d0d9e4'},
+    {label:'ส่งสำเร็จแล้ว',  val:sent,       tone:'#1a8a5a'},
+    {label:'ยืนยันพร้อมส่ง', val:ready,      tone:'#c9821a'},
+    {label:'ยังไม่ยืนยัน',   val:unreviewed, tone:'#d0d9e4'},
   ].map(t => `
-    <div style="margin-bottom:14px;">
+    <div style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
         <span style="color:#54657a;">${t.label}</span>
         <span style="font-weight:700;color:#0d2742;">${t.val.toLocaleString()} <span style="font-size:11px;color:#8b99a9;">/ ${total.toLocaleString()}</span></span>
       </div>
       ${bar(t.val, total, t.tone)}
     </div>
-  `).join('');
+  `).join('') + `
+  <div style="border-top:1px solid #eef1f5;padding-top:14px;margin-top:4px;">
+    <div style="font-size:12px;font-weight:600;color:#6b7a8d;margin-bottom:10px;">อัตราการส่งสำเร็จ</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      ${donut}
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#1a8a5a;display:inline-block;"></span><span style="font-size:12px;color:#54657a;">ส่งสำเร็จ <b style="color:#0d2742;">${sent}</b></span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#cf3b3b;display:inline-block;"></span><span style="font-size:12px;color:#54657a;">ไม่สำเร็จ <b style="color:#0d2742;">0</b></span></div>
+      </div>
+    </div>
+    <div style="background:#f5f8fc;border-radius:10px;padding:12px 14px;">
+      <div style="font-size:12px;color:#6b7a8d;margin-bottom:4px;">ยอดเคลมที่ส่งสำเร็จ (สะสม)</div>
+      <div style="font-size:22px;font-weight:700;color:#0d2742;">฿${fmtAmt(amount)} <span style="font-size:13px;font-weight:400;color:#6b7a8d;">บาท</span></div>
+      <div style="font-size:11.5px;color:#8b99a9;margin-top:3px;">จาก ${sent.toLocaleString()} รายการที่บันทึก DMIS แล้ว</div>
+    </div>
+  </div>`;
 }
 
 function drillDownByPttype(code, name, from, to) {
