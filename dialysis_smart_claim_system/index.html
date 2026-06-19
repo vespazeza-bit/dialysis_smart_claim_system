@@ -888,6 +888,12 @@ function formatThaiDate(s) {
   if (!m) return s;
   return `${m[3]}/${m[2]}/${parseInt(m[1])+543}`;
 }
+function formatThaiDateTime(s) {
+  if (!s) return '-';
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return formatThaiDate(s);
+  return `${m[3]}/${m[2]}/${parseInt(m[1])+543} ${m[4]}:${m[5]}`;
+}
 function formatTime(s) {
   if (!s) return '-';
   const str = String(s);
@@ -1775,11 +1781,10 @@ async function loadLogs() {
     const sql = `
       SELECT
         c.vn,
-        IFNULL(CONCAT(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/'),YEAR(c.clinic_hd_claim_sent_at)+543,DATE_FORMAT(c.clinic_hd_claim_sent_at,' %H:%i')),'-') AS sent_time,
+        c.clinic_hd_claim_sent_at AS sent_at,
         IFNULL(c.clinic_hd_claim_sent_by,'ระบบ') AS sent_by,
         v.hn,
         v.vstdate,
-        CONCAT(DATE_FORMAT(v.vstdate,'%d/%m/'),YEAR(v.vstdate)+543) AS vstdate_fmt,
         CONCAT(IFNULL(p.pname,''),IFNULL(p.fname,''),' ',IFNULL(p.lname,'')) AS ptname
       FROM clinic_hd_claim c
       INNER JOIN ovst v ON v.vn = c.vn
@@ -1809,7 +1814,7 @@ function renderLogs(rows) {
 
   // summary card
   const total = rows.length;
-  const lastTime = rows[0]?.sent_time || '';
+  const lastTime = formatThaiDateTime(rows[0]?.sent_at);
   if (sumEl) {
     sumEl.style.cssText = 'display:flex;background:#e6f4ec;border:1px solid #bbdece;border-radius:14px;padding:16px 22px;margin-bottom:14px;align-items:center;gap:20px;flex-wrap:wrap;';
     sumEl.innerHTML = `
@@ -1839,8 +1844,8 @@ function renderLogs(rows) {
       <span style="width:9px;height:9px;border-radius:50%;background:#16a34a;flex:0 0 auto;"></span>
       <div style="flex:0 0 88px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:#33465c;">${escHtml(l.hn||'')}</div>
       <div style="flex:1;font-size:13.5px;color:#1c2e44;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(name)}">${escHtml(name)}</div>
-      <div style="flex:0 0 110px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8b99a9;">${escHtml(l.vstdate_fmt||'')}</div>
-      <div style="flex:0 0 155px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8b99a9;">${escHtml(l.sent_time)}</div>
+      <div style="flex:0 0 110px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8b99a9;">${escHtml(formatThaiDate(l.vstdate))}</div>
+      <div style="flex:0 0 155px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8b99a9;">${escHtml(formatThaiDateTime(l.sent_at))}</div>
       <div style="flex:0 0 80px;font-size:12px;color:#55677d;text-align:center;">${escHtml(actor)}</div>
       <span style="background:#e6f4ec;color:#1a8a5a;font-size:12px;font-weight:700;border-radius:7px;padding:4px 13px;white-space:nowrap;">ส่งสำเร็จ</span>
     </div>`;
