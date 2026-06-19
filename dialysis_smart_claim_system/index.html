@@ -1142,6 +1142,12 @@ async function enrichQueueData(rows) {
       // --- static ---
       dbllumen:         '',
       parnutr:          bill.parnutr        ?? null,
+      // --- computed total ---
+      claim_total: (() => {
+        const sum = [bill.hd_claim, bill.iv_iron, bill.lowmolheparin, bill.parnutr, bill.lab_xray, bill.humanalb]
+          .reduce((s, v) => s + (parseFloat(v) || 0), 0);
+        return sum > 0 ? sum : null;
+      })(),
     };
   });
 }
@@ -1186,6 +1192,7 @@ async function saveConfirmStatusToDB(vn, status) {
     clinic_hd_esa_epo,clinic_hd_qty,clinic_hd_route,
     clinic_hd_claim_amount,clinic_hd_iv_iron,clinic_hd_lowmolheparin,
     clinic_hd_dbllumen,clinic_hd_parnutr,clinic_hd_lab_xray,clinic_hd_humanalb,
+    claim_total,
     clinic_hd_confirm_status,lastupdate
   ) VALUES (
     ${e(r.vn)},${e(r.hn)},${i(r.id)},
@@ -1202,9 +1209,10 @@ async function saveConfirmStatusToDB(vn, status) {
     ${e(r.esa_epo)},${e(r.qty)},${e(r.route)},
     ${n(r.hd_claim)},${n(r.iv_iron)},${n(r.lowmolheparin)},
     ${n(r.dbllumen)},${n(r.parnutr)},${n(r.lab_xray)},${n(r.humanalb)},
+    ${n(r.claim_total)},
     ${st},NOW()
   ) ON DUPLICATE KEY UPDATE
-    clinic_hd_confirm_status=${st},lastupdate=NOW()`;
+    claim_total=${n(r.claim_total)},clinic_hd_confirm_status=${st},lastupdate=NOW()`;
   try {
     const res = await fetch('http://localhost:8765/mysql-write', {
       method: 'POST',
@@ -1616,6 +1624,7 @@ const QUEUE_COLS = [
   ['hd_mode',           'hd_mode',      72,  r=>`<span style="font-size:16px;color:#55677d;">${fmtN(r.hd_mode)}</span>`],
   ['hct',               'Hct',          55,  r=>`<span style="${_nr}">${fmtN(r.hct)}</span>`],
   ['hd_claim',          'hd_claim',     88,  r=>`<span style="${_nr}font-weight:600;color:#0d2742;">${r.hd_claim?'฿'+parseFloat(r.hd_claim).toLocaleString():'-'}</span>`],
+  ['claim_total',       'ยอดรวม',      105,  r=>`<span style="${_nr}font-weight:700;color:#1a6db5;">${r.claim_total?'฿'+parseFloat(r.claim_total).toLocaleString():'-'}</span>`],
   ['esa_epo',           'esa_epo',      115, r=>`<span style="font-size:16px;color:#55677d;overflow:hidden;text-overflow:ellipsis;display:block;" title="${escHtml(r.esa_epo)}">${fmtN(r.esa_epo)}</span>`],
   ['qty',               'qty',          52,  r=>`<span style="${_nr}">${fmtN(r.qty)}</span>`],
   ['route',             'route',        68,  r=>`<span style="font-size:16px;color:#55677d;">${fmtN(r.route)}</span>`],

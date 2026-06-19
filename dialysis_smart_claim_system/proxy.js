@@ -74,6 +74,7 @@ function loadDbConfig() {
 }
 
 let pool = null;
+let _migrationsDone = false;
 function getPool() {
   const cfg = loadDbConfig();
   if (!cfg || !cfg.host || !cfg.user || !cfg.database) return null;
@@ -88,6 +89,12 @@ function getPool() {
       connectionLimit: 5,
     });
     console.log(`[mysql] pool created → ${cfg.user}@${cfg.host}:${cfg.port||3306}/${cfg.database}`);
+    if (!_migrationsDone) {
+      _migrationsDone = true;
+      pool.query('ALTER TABLE clinic_hd_claim ADD COLUMN IF NOT EXISTS claim_total DECIMAL(10,2) DEFAULT NULL')
+        .then(() => console.log('[migrate] claim_total column OK'))
+        .catch(e => console.warn('[migrate] claim_total:', e.message));
+    }
   }
   return pool;
 }
