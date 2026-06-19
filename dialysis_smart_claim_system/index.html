@@ -216,9 +216,17 @@
           <button id="db-preset-year"    onclick="setDashPreset('year')"    style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">ปีนี้</button>
           <button id="db-preset-custom"  onclick="setDashPreset('custom')"  style="border:1px solid #d0d9e4;border-radius:20px;padding:5px 14px;font-size:13px;cursor:pointer;background:#fff;color:#33465c;">กำหนดเอง</button>
           <div id="db-custom-range" style="display:none;align-items:center;gap:8px;">
-            <input type="date" id="db-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+            <div class="date-wrap" onclick="openDatePicker('db-date-from')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="db-date-from-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+              <input type="date" id="db-date-from" onchange="updateDateLabel('db-date-from')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+            </div>
             <span style="color:#8b99a9;font-size:13px;">ถึง</span>
-            <input type="date" id="db-date-to"   style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+            <div class="date-wrap" onclick="openDatePicker('db-date-to')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="db-date-to-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+              <input type="date" id="db-date-to" onchange="updateDateLabel('db-date-to')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+            </div>
             <button onclick="loadDashboard()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:7px 20px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
           </div>
           <span id="db-range-label" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
@@ -256,9 +264,17 @@
             <div style="flex:0 0 auto;">
               <div style="font-size:11.5px;font-weight:600;color:#6b7a8d;margin-bottom:5px;letter-spacing:.3px;">วันที่รับบริการ</div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <input type="date" id="q-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+                <div class="date-wrap" onclick="openDatePicker('q-date-from')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span id="q-date-from-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+                  <input type="date" id="q-date-from" onchange="updateDateLabel('q-date-from')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+                </div>
                 <span style="font-size:12px;color:#8b99a9;padding:0 2px;">–</span>
-                <input type="date" id="q-date-to" style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+                <div class="date-wrap" onclick="openDatePicker('q-date-to')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+                  <span id="q-date-to-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+                  <input type="date" id="q-date-to" onchange="updateDateLabel('q-date-to')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+                </div>
               </div>
             </div>
             <div style="flex:0 0 160px;">
@@ -355,9 +371,17 @@
         <!-- filter bar -->
         <div style="background:#fff;border:1px solid #e4e9f0;border-radius:14px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:13px;font-weight:600;color:#33465c;">ช่วงวันที่</span>
-          <input type="date" id="log-date-from" style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+          <div class="date-wrap" onclick="openDatePicker('log-date-from')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="log-date-from-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+            <input type="date" id="log-date-from" onchange="updateDateLabel('log-date-from')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+          </div>
           <span style="color:#8b99a9;font-size:13px;">ถึง</span>
-          <input type="date" id="log-date-to"   style="border:1px solid #d0d9e4;border-radius:8px;padding:6px 10px;font-size:13px;color:#1c2e44;">
+          <div class="date-wrap" onclick="openDatePicker('log-date-to')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b99a9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="log-date-to-lbl" class="date-lbl">วว/ดด/ปปปป</span>
+            <input type="date" id="log-date-to" onchange="updateDateLabel('log-date-to')" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;">
+          </div>
           <button onclick="loadLogs()" style="background:#2563a8;color:#fff;border:none;border-radius:8px;padding:7px 20px;font-size:13px;font-weight:600;cursor:pointer;">ค้นหา</button>
           <span id="log-count" style="margin-left:auto;font-size:12.5px;color:#8b99a9;"></span>
         </div>
@@ -848,7 +872,7 @@ function updateDateLabel(id) {
   if (!lbl) return;
   if (v) {
     const [y, m, d] = v.split('-');
-    lbl.textContent = `${d}/${m}/${y}`;
+    lbl.textContent = `${d}/${m}/${parseInt(y)+543}`;
     lbl.classList.add('has-value');
   } else {
     lbl.textContent = 'วว/ดด/ปปปป';
@@ -1226,16 +1250,16 @@ function initQueueScreen() {
   if (_pendingQueueFilter) {
     const { pttype, from, to } = _pendingQueueFilter;
     _pendingQueueFilter = null;
-    if (f) { f.value = from; }
-    if (t) { t.value = to;   }
+    if (f) { f.value = from; updateDateLabel('q-date-from'); }
+    if (t) { t.value = to;   updateDateLabel('q-date-to'); }
     loadQueueDropdowns(from, to).then(() => {
       const pEl = document.getElementById('q-pttype');
       if (pEl && pttype) pEl.value = pttype;
       searchQueue();
     });
   } else {
-    if (f && !f.value) { f.value = today; }
-    if (t && !t.value) { t.value = today; }
+    if (f && !f.value) { f.value = today; updateDateLabel('q-date-from'); }
+    if (t && !t.value) { t.value = today; updateDateLabel('q-date-to'); }
     loadQueueDropdowns(f ? f.value : today, t ? t.value : today);
   }
   updateClaimButtons();
@@ -1734,8 +1758,8 @@ async function loadLogs() {
   const todayStr = new Date().toISOString().slice(0,10);
   const fromEl = document.getElementById('log-date-from');
   const toEl   = document.getElementById('log-date-to');
-  if (fromEl && !fromEl.value) fromEl.value = todayStr;
-  if (toEl   && !toEl.value)   toEl.value   = todayStr;
+  if (fromEl && !fromEl.value) { fromEl.value = todayStr; updateDateLabel('log-date-from'); }
+  if (toEl   && !toEl.value)   { toEl.value   = todayStr; updateDateLabel('log-date-to'); }
   const from = fromEl?.value || todayStr;
   const to   = toEl?.value   || todayStr;
 
