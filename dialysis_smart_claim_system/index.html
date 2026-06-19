@@ -1079,6 +1079,7 @@ async function enrichQueueData(rows) {
 
   /* Billing: blood_flow/hd_claim/parnutr/humanalb/lab_xray/iv_iron/lowmolheparin — chunk 30 */
   const billRows = await chunked(vn => `SELECT o.vn,
+    SUM(o.sum_price) AS total_all,
     SUM(CASE WHEN o.income='06' THEN o.sum_price END) AS blood_flow,
     SUM(CASE WHEN n.billcode IN ('71640','71641') THEN o.sum_price END) AS hd_claim,
     SUM(CASE WHEN n.billcode='55820' THEN o.sum_price END) AS parnutr,
@@ -1190,12 +1191,7 @@ async function enrichQueueData(rows) {
       // --- static ---
       dbllumen:         '',
       parnutr:          bill.parnutr        ?? null,
-      // --- computed total ---
-      claim_total: (() => {
-        const sum = [bill.hd_claim, bill.iv_iron, bill.lowmolheparin, bill.parnutr, bill.lab_xray, bill.humanalb]
-          .reduce((s, v) => s + (parseFloat(v) || 0), 0);
-        return sum > 0 ? sum : null;
-      })(),
+      claim_total: bill.total_all ?? null,
     };
   });
 }
@@ -1672,7 +1668,6 @@ const QUEUE_COLS = [
   ['hd_mode',           'hd_mode',      72,  r=>`<span style="font-size:16px;color:#55677d;">${fmtN(r.hd_mode)}</span>`],
   ['hct',               'Hct',          55,  r=>`<span style="${_nr}">${fmtN(r.hct)}</span>`],
   ['hd_claim',          'hd_claim',     88,  r=>`<span style="${_nr}font-weight:600;color:#0d2742;">${r.hd_claim?'฿'+parseFloat(r.hd_claim).toLocaleString():'-'}</span>`],
-  ['claim_total',       'ยอดรวม',      105,  r=>`<span style="${_nr}font-weight:700;color:#1a6db5;">${r.claim_total?'฿'+parseFloat(r.claim_total).toLocaleString():'-'}</span>`],
   ['esa_epo',           'esa_epo',      115, r=>`<span style="font-size:16px;color:#55677d;overflow:hidden;text-overflow:ellipsis;display:block;" title="${escHtml(r.esa_epo)}">${fmtN(r.esa_epo)}</span>`],
   ['qty',               'qty',          52,  r=>`<span style="${_nr}">${fmtN(r.qty)}</span>`],
   ['route',             'route',        68,  r=>`<span style="font-size:16px;color:#55677d;">${fmtN(r.route)}</span>`],
@@ -1684,6 +1679,7 @@ const QUEUE_COLS = [
   ['parnutr',           'parnutr',      68,  r=>`<span style="${_nr}">${fmtN(r.parnutr)}</span>`],
   ['lab_xray',          'lab_xray',     68,  r=>`<span style="${_nr}">${fmtN(r.lab_xray)}</span>`],
   ['humanalb',          'humanalb',     72,  r=>`<span style="${_nr}">${fmtN(r.humanalb)}</span>`],
+  ['claim_total',       'ยอดรวม',      105,  r=>`<span style="${_nr}font-weight:700;color:#1a6db5;">${r.claim_total?'฿'+parseFloat(r.claim_total).toLocaleString():'-'}</span>`],
 ];
 
 // คอลัมน์ระบบที่ไม่ต้องแสดงแถบแดง
