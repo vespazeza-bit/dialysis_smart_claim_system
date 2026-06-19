@@ -1775,7 +1775,7 @@ async function loadLogs() {
     const sql = `
       SELECT
         c.vn,
-        IFNULL(CONCAT(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/'),YEAR(c.clinic_hd_claim_sent_at)+543,DATE_FORMAT(c.clinic_hd_claim_sent_at,' %H:%i')),'—') AS sent_time,
+        IFNULL(CONCAT(DATE_FORMAT(c.clinic_hd_claim_sent_at,'%d/%m/'),YEAR(c.clinic_hd_claim_sent_at)+543,DATE_FORMAT(c.clinic_hd_claim_sent_at,' %H:%i')),'-') AS sent_time,
         IFNULL(c.clinic_hd_claim_sent_by,'ระบบ') AS sent_by,
         v.hn,
         v.vstdate,
