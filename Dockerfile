@@ -1,11 +1,11 @@
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy static files to nginx html directory
-COPY index.html /usr/share/nginx/html/
-COPY dmis-extension/ /usr/share/nginx/html/dmis-extension/
+COPY dialysis_smart_claim_system/index.html /usr/share/nginx/html/
+COPY dialysis_smart_claim_system/dmis-extension/ /usr/share/nginx/html/dmis-extension/
 
 # Configure nginx to serve single-page application
 RUN echo 'server { \
