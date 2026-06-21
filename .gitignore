@@ -9,3 +9,5 @@ Thumbs.db
 *.session
 *.sid
 .server.cjs
+.omc/
+.playwright-mcp/
